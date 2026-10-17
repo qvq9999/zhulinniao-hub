@@ -39,7 +39,9 @@
       "resources/driver/apo/CMApo.cat": "driver/apo/CMApo.cat",
       "resources/driver/apo/CmApoIce.dll": "driver/apo/CmApoIce.dll",
       "resources/driver/ext/CM002X1_Ext.inf": "driver/ext/CM002X1_Ext.inf",
-      "resources/driver/ext/CMExt.cat": "driver/ext/CMExt.cat"
+      "resources/driver/ext/CMExt.cat": "driver/ext/CMExt.cat",
+      "resources/repair/Repair-Audio-Effects.cmd": "修复音效.cmd",
+      "resources/repair/repair-apo.ps1": "repair-apo.ps1"
     },
     "windows": {
       "nsis": {

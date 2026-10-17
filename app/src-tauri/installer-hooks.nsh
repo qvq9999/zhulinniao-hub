@@ -61,6 +61,9 @@
   Push $R8
   Push $R9
 
+  ; 修复工具（修复音效.cmd + repair-apo.ps1）由 tauri.conf.json 的 resources 直接落到安装根目录，
+  ; 这里不再复制 —— 本文件是无 BOM 的 UTF-8，中文字面量会被 makensis 当 ANSI 解析成乱码。
+
   Delete "${ZHUB_LOG_FILE}"
   FileOpen $R4 "${ZHUB_LOG_FILE}" w
 
@@ -89,26 +92,63 @@
   nsExec::ExecToLog '"$R9" /add-driver "${ZHUB_DRV_ROOT}\base\CM002X1.Inf" /install'
   Pop $R5
 
+  ; 2b) **把扩展 INF 真正应用到设备**（2026-10-17 事故教训，不可省）。
+  ;     只 stage 不 /install 时，扩展的 AddReg（FX\0 的 CompositeFX CLSID 绑定）与
+  ;     AddComponent（创建 SWC\CM002X1&CMEDIA&CMAPO_ICE 组件 → 注册 APO 的 5 个 CLSID）
+  ;     都不会执行。此时应用仍能读写 FxProperties（User 区由属性存储 API 按需创建），
+  ;     表现为「开关能打开、参数能写、但听不出任何变化」——因为根本没有 APO 在消费。
+  ;     设备上若已是同版本基础驱动，base /install 不会重装设备，扩展也就不会被重新应用，
+  ;     所以必须显式对扩展 INF 执行 /install（Win10 2004+ 支持）。
+  DetailPrint "Applying extension INF to matching devices (APO registration)..."
+  nsExec::ExecToLog '"$R9" /add-driver "${ZHUB_DRV_ROOT}\ext\CM002X1_Ext.inf" /install'
+  Pop $R8
+
   ; 3) 重启该设备，强制重新应用扩展 INF 与 APO 组件（设备未插入时返回非 0，不算失败）
   nsExec::ExecToLog '"$R9" /restart-device /deviceid "USB\VID_0D8C&PID_0334&MI_00"'
   Pop $R6
 
-  ; 4) 校验扩展 INF 是否真的落到设备硬件键上（读 FX\0 的 Enable_EQ_GFX）。
-  ;    1 = 属性区已建立；0 = 扩展没应用，音效必然不可用，必须让用户知道。
+  ; 4) 校验 APO 是否真的注册 —— 唯一可信的判据。
+  ;    APO 组件 INF 的 Apo_AddReg 会写 HKR\AudioEngine\AudioProcessingObjects\{CLSID}，
+  ;    而 SWD 软件组件设备的 HKR 映射到「设备类键」Control\Class\{5989fce8-...}\NNNN，
+  ;    不是 Enum\SWC、也不是端点的 Device Parameters\FX（2026-10-17 实测踩坑，勿改回）。
+  ;    有 C-Media 的 SFX CLSID 的 FriendlyName 即代表 APO 已安装并注册。
   StrCpy $R7 0
   StrCpy $R0 0
-  zhub_scan_fx:
-    EnumRegKey $1 HKLM "SYSTEM\CurrentControlSet\Enum\USB\VID_0D8C&PID_0334&MI_00" $R0
-    StrCmp $1 "" zhub_scan_done
-    ReadRegStr $2 HKLM "SYSTEM\CurrentControlSet\Enum\USB\VID_0D8C&PID_0334&MI_00\$1\Device Parameters\FX\0" "{BD341FFB-9FD1-4ED4-8159-7999D546EA8A},0"
-    ReadRegStr $2 HKLM "SYSTEM\\CurrentControlSet\\Enum\\USB\\VID_0D8C&PID_0334&MI_00\\$1\\FX\\0" "{BD341FFB-9FD1-4ED4-8159-7999D546EA8A},0"
-    StrCmp $2 "" +2
-      StrCpy $R7 1
+  zhub_scan_apo:
+    EnumRegKey $1 HKLM "SYSTEM\CurrentControlSet\Control\Class\{5989fce8-9cd0-467d-8a6a-5419e31529d4}" $R0
+    StrCmp $1 "" zhub_scan_apo_done
+    ReadRegStr $2 HKLM "SYSTEM\CurrentControlSet\Control\Class\{5989fce8-9cd0-467d-8a6a-5419e31529d4}\$1\AudioEngine\AudioProcessingObjects\{22677C05-5EC6-443C-8082-8D4A1662F4A3}" "FriendlyName"
     StrCmp $2 "" +2
       StrCpy $R7 1
     IntOp $R0 $R0 + 1
-    Goto zhub_scan_fx
-  zhub_scan_done:
+    Goto zhub_scan_apo
+  zhub_scan_apo_done:
+
+  ; 4b) 证据缺失 → 清掉设备的陈旧安装记录后强制重装一次。
+  ;     旧版原厂驱动卸载后，SetupAPI 仍记着「扩展已安装」，pnputil 会返回 0 但什么都不做；
+  ;     只有把设备节点移除再重扫，Windows 才会重新走一遍安装（AddReg + AddComponent）。
+  ${If} $R7 != "1"
+    StrCpy $1 ""
+    EnumRegKey $1 HKLM "SYSTEM\CurrentControlSet\Enum\USB\VID_0D8C&PID_0334&MI_00" 0
+    ${If} $1 != ""
+      DetailPrint "APO not registered yet; forcing device reinstall..."
+      nsExec::ExecToLog '"$R9" /remove-device "USB\VID_0D8C&PID_0334&MI_00\$1"'
+      Sleep 2000
+      nsExec::ExecToLog '"$R9" /scan-devices'
+      Sleep 8000
+      StrCpy $R7 0
+      StrCpy $R0 0
+      zhub_scan_apo2:
+        EnumRegKey $1 HKLM "SYSTEM\CurrentControlSet\Control\Class\{5989fce8-9cd0-467d-8a6a-5419e31529d4}" $R0
+        StrCmp $1 "" zhub_scan_apo2_done
+        ReadRegStr $2 HKLM "SYSTEM\CurrentControlSet\Control\Class\{5989fce8-9cd0-467d-8a6a-5419e31529d4}\$1\AudioEngine\AudioProcessingObjects\{22677C05-5EC6-443C-8082-8D4A1662F4A3}" "FriendlyName"
+        StrCmp $2 "" +2
+          StrCpy $R7 1
+        IntOp $R0 $R0 + 1
+        Goto zhub_scan_apo2
+      zhub_scan_apo2_done:
+    ${EndIf}
+  ${EndIf}
 
   ; nsExec 无法启动进程时返回 "error"，统一折算为 9999，避免 WriteRegDWORD 写非数字
   StrCmp $R1 "error" 0 +2
@@ -119,6 +159,8 @@
     StrCpy $R3 9999
   StrCmp $R5 "error" 0 +2
     StrCpy $R5 9999
+  StrCmp $R8 "error" 0 +2
+    StrCpy $R8 9999
 
   ; 判定整体结果：暂存 + 设备安装都成功，且扩展属性区确实建立
   StrCpy $R0 1
@@ -138,7 +180,12 @@
   ${AndIf} $R5 != "3010"
     StrCpy $R0 0
   ${EndIf}
-  ; 注意：$R7（fx 探测）不参与成功判定，只写日志——探不到不等于安装失败
+  ; 扩展必须真正生效（否则 APO 不注册 → 音效全是"哑开关"）。
+  ; ⚠️ 不能看 pnputil 返回码：实测它在「设备无需更新」时返回 0，却一个动作都不执行。
+  ; 只认证据：$R7 = 1（APO 已注册，见第 4 步）。
+  ${If} $R7 != "1"
+    StrCpy $R0 0
+  ${EndIf}
 
   ${If} $R5 == "3010"
     SetRebootFlag true
@@ -148,6 +195,7 @@
   WriteRegDWORD HKLM "${ZHUB_REG_KEY}" "ApoRc" "$R2"
   WriteRegDWORD HKLM "${ZHUB_REG_KEY}" "ExtRc" "$R3"
   WriteRegDWORD HKLM "${ZHUB_REG_KEY}" "InstallRc" "$R5"
+  WriteRegDWORD HKLM "${ZHUB_REG_KEY}" "ExtApplyRc" "$R8"
   WriteRegDWORD HKLM "${ZHUB_REG_KEY}" "RestartRc" "$R6"
   WriteRegDWORD HKLM "${ZHUB_REG_KEY}" "FxApplied" "$R7"
   WriteRegDWORD HKLM "${ZHUB_REG_KEY}" "Ok" "$R0"
@@ -160,17 +208,18 @@
     FileWrite $R4 "driver_root=${ZHUB_DRV_ROOT}$\r$\n"
     FileWrite $R4 "pnputil=$R9$\r$\n"
     FileWrite $R4 "stage: base=$R1 apo=$R2 ext=$R3$\r$\n"
-    FileWrite $R4 "install_rc=$R5 restart_rc=$R6 fx_applied=$R7 ok=$R0$\r$\n"
+    FileWrite $R4 "install_rc=$R5 ext_apply_rc=$R8 restart_rc=$R6$\r$\n"
+    FileWrite $R4 "apo_registered=$R7 apo_name=[$2] ok=$R0$\r$\n"
     FileWrite $R4 "note: 0/3010 = success; 9999 = pnputil could not be launched$\r$\n"
     FileClose $R4
   ${EndIf}
 
-  DetailPrint "Driver result: stage(base=$R1 apo=$R2 ext=$R3) install=$R5 restart=$R6 fx=$R7 ok=$R0"
+  DetailPrint "Driver result: stage(base=$R1 apo=$R2 ext=$R3) install=$R5 ext_apply=$R8 restart=$R6 apo_registered=$R7 ok=$R0"
 
   ; 失败时明确提示，但不中断应用安装（装置信息/音量仍可用，音效不可用）
   ${If} $R0 != "1"
     ${IfNot} ${Silent}
-      MessageBox MB_OK|MB_ICONEXCLAMATION "Audio driver components could not be installed completely.$\r$\n$\r$\nThe app is installed, but sound effects will be unavailable until the driver is present.$\r$\n$\r$\nstage base=$R1 apo=$R2 ext=$R3 | install=$R5 restart=$R6 fx=$R7$\r$\nLog: ${ZHUB_LOG_FILE}"
+      MessageBox MB_OK|MB_ICONEXCLAMATION "Audio driver components could not be installed completely.$\r$\n$\r$\nThe app is installed, but sound effects will be unavailable until the driver is present.$\r$\nIf the headphones were unplugged, plug them in and run this installer again.$\r$\n$\r$\nstage base=$R1 apo=$R2 ext=$R3$\r$\ninstall=$R5 ext_apply=$R8 restart=$R6$\r$\napo_registered=$R7$\r$\nLog: ${ZHUB_LOG_FILE}"
     ${EndIf}
   ${EndIf}
 
@@ -194,5 +243,8 @@
   ; 这与厂商安装器的行为一致；如需彻底移除，使用「设备管理器」或 pnputil /delete-driver。
   RMDir /r "${ZHUB_DRV_ROOT}"
   Delete "${ZHUB_LOG_FILE}"
+  Delete "$INSTDIR\driver-repair.log"
+  Delete "$INSTDIR\Repair-Audio-Effects.cmd"
+  Delete "$INSTDIR\repair-apo.ps1"
   DeleteRegKey HKLM "${ZHUB_REG_KEY}"
 !macroend

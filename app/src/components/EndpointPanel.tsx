@@ -114,7 +114,10 @@ export default function EndpointPanel({ capture, title }: EndpointPanelProps) {
           onChange={(v) => {
             setBalance(v);
             const [l, r] = balanceToChannels(v);
-            void write(() => tauriSetAudioBalance(capture, l, r), `已写入平衡 左${Math.round(l * 100)}% / 右${Math.round(r * 100)}%`);
+            void write(
+              () => tauriSetAudioBalance(capture, l, r),
+              `已写入平衡：左 ${Math.round(l * 100)}% / 右 ${Math.round(r * 100)}%（相对当前音量，音量不变）`,
+            );
           }}
           formatValue={(v) => (v === 50 ? '居中' : `左 ${100 - v}% · 右 ${v}%`)}
           ariaLabel="左右声道平衡"

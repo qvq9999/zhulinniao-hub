@@ -174,10 +174,19 @@ mod imp {
         })
     }
 
-    /// 设置左/右声道音量（0.0–1.0）。声道数不足 2 时报错，避免静默无效。
+    /// 设置平衡：left/right 是 **相对系数**（1=该侧满额、0=该侧静音），
+    /// 实际写入值 = 当前主音量 × 归一化系数。
+    ///
+    /// ⚠️ 两条实测约束（2026-10-17），少一条就会「调平衡变成调音量」：
+    /// 1. 不能写绝对值 —— 本机端点会把 max(左右声道) 反映到 master 上，
+    ///    写 1.0 / 0.0 会让主音量从 36% 跳到 100%。
+    /// 2. 系数必须归一化到 max=1 —— 否则写 (0.25, 0.75) 时 master 会变成 主音量×0.75（掉了 25%）。
+    ///    归一化后「较响的一侧保持原电平，只衰减另一侧」，主音量恒定。
     pub fn set_balance(capture: bool, left: f32, right: f32) -> Result<(), String> {
-        let l = left.clamp(0.0, 1.0);
-        let r = right.clamp(0.0, 1.0);
+        let l0 = left.clamp(0.0, 1.0);
+        let r0 = right.clamp(0.0, 1.0);
+        let peak = l0.max(r0);
+        let (l, r) = if peak > 0.0001 { (l0 / peak, r0 / peak) } else { (1.0, 1.0) };
         with_volume(capture, |vol| unsafe {
             let ch = vol.GetChannelCount()?;
             if ch < 2 {
@@ -186,8 +195,9 @@ mod imp {
                     "该端点声道数不足 2，无法分别设置左右音量",
                 ));
             }
-            vol.SetChannelVolumeLevelScalar(0, l, std::ptr::null())?;
-            vol.SetChannelVolumeLevelScalar(1, r, std::ptr::null())?;
+            let master = vol.GetMasterVolumeLevelScalar()?;
+            vol.SetChannelVolumeLevelScalar(0, master * l, std::ptr::null())?;
+            vol.SetChannelVolumeLevelScalar(1, master * r, std::ptr::null())?;
             Ok(())
         })
     }
@@ -295,13 +305,29 @@ mod tests {
             return;
         }
 
+        // 语义：left/right 为相对系数，内部归一化到 max=1 后按主音量缩放；
+        // 目标：**平衡操作绝不改动主音量**（这是「调平衡变调音量」的回归点）。
+        let master_before = before.volume;
+        if master_before < 0.1 {
+            println!("跳过断言：主音量过低（{master_before:.2}），先把系统音量调高再测");
+            return;
+        }
         imp::set_balance(false, 0.25, 0.75).expect("写左右应成功");
         let mid = imp::get_state(false).expect("回读应成功");
-        println!("写 25/75 → 回读 {:.2}/{:.2}", mid.left, mid.right);
-        assert!((mid.left - 0.25).abs() < 0.03, "左声道应写入 25%，实际 {}", mid.left);
-        assert!((mid.right - 0.75).abs() < 0.03, "右声道应写入 75%，实际 {}", mid.right);
+        println!(
+            "写系数 0.25/0.75（主音量 {:.2}）→ 回读 主 {:.3} 左 {:.3} 右 {:.3}",
+            master_before, mid.volume, mid.left, mid.right
+        );
+        assert!(
+            (mid.volume - master_before).abs() < 0.03,
+            "平衡不应改动主音量：写前 {:.3}，写后 {:.3}",
+            master_before,
+            mid.volume
+        );
+        let ratio = mid.right / mid.left.max(0.001);
+        assert!((ratio - 3.0).abs() < 0.2, "左右应为 1:3（归一化），实际 1:{ratio:.2}");
 
-        imp::set_balance(false, before.left, before.right).expect("还原应成功");
-        println!("已还原为 {:.2}/{:.2}", before.left, before.right);
+        imp::set_balance(false, 1.0, 1.0).expect("还原应成功");
+        println!("已还原为左右各 100%（主音量 {:.2}）", before.volume);
     }
 }

@@ -3,6 +3,7 @@ name = "zhulinniao-hub"
 version = "0.1.0"
 description = "竹林鸟朱雀耳机 Hub（CM002X1）— 原版驱动 UI 重置版"
 edition = "2021"
+default-run = "zhulinniao-hub"
 
 [lib]
 name = "zhulinniao_hub_lib"

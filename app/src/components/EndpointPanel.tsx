@@ -27,16 +27,32 @@ export interface EndpointPanelProps {
 }
 
 const balanceToChannels = (p: number): [number, number] => {
-  const x = p / 100;
+  const x = Math.min(1, Math.max(0, p / 100));
   const left = x <= 0.5 ? 1 : 1 - (x - 0.5) * 2;
   const right = x >= 0.5 ? 1 : x * 2;
   return [Math.round(left * 100) / 100, Math.round(right * 100) / 100];
 };
 
+/**
+ * 左右系数 → 滑杆位置（balanceToChannels 的严格逆函数）。
+ *
+ * ⚠️ 实测踩坑（2026-10-17）：旧实现把「右声道更响」也归到左半边的公式里，
+ * 拖到 75 写进去是 (0.5, 1.0)，回读却算成 25 —— 表现就是
+ * 「滑杆自己跳位置，声音却已经生效」。
+ *   p <= 50：left=1，right=2x  → x = right/left
+ *   p >= 50：right=1，left=2-2x → x = 1 - left/right/2
+ */
 const channelsToBalance = (left: number, right: number): number => {
-  if (left <= 0 && right <= 0) return 50;
-  if (Math.abs(left - right) < 0.02) return 50;
-  return right < left ? Math.round(50 + (1 - right / Math.max(left, 0.01)) * 50) : Math.round((left / Math.max(right, 0.01)) * 50);
+  const l = Math.max(left, 0);
+  const r = Math.max(right, 0);
+  const peak = Math.max(l, r);
+  if (peak <= 0) return 50;
+  // 死区按「相对差」判断：绝对值阈值在低音量下会把 45%/55% 吞成 50%
+  if (Math.abs(l - r) / peak < 0.02) return 50;
+  if (r < l) {
+    return Math.round(Math.min(50, (r / peak) * 50));
+  }
+  return Math.round(Math.max(50, 100 - (l / peak) * 50));
 };
 
 export default function EndpointPanel({ capture, title }: EndpointPanelProps) {
@@ -55,7 +71,11 @@ export default function EndpointPanel({ capture, title }: EndpointPanelProps) {
       setMuted(st.muted);
       setChannels(st.channels);
       setDevice(st.device_name);
-      if (st.channels >= 2) setBalance(channelsToBalance(st.left, st.right));
+      if (st.channels >= 2) {
+        // 拖动结束后才回填滑杆；差值 < 3 不回填，避免设备量化带来的抖动手感
+        const next = channelsToBalance(st.left, st.right);
+        setBalance((cur) => (Math.abs(next - cur) >= 3 ? next : cur));
+      }
     } catch {
       setNote('浏览器预览：音量/平衡仅在桌面版生效');
     }
@@ -121,6 +141,7 @@ export default function EndpointPanel({ capture, title }: EndpointPanelProps) {
           }}
           formatValue={(v) => (v === 50 ? '居中' : `左 ${100 - v}% · 右 ${v}%`)}
           ariaLabel="左右声道平衡"
+          hint={note && (note.includes('平衡') || note.includes('失败')) ? note : '拖动只改左右分配，不改总音量'}
         />
       ) : (
         <p className="field__hint">当前端点声道数不足 2，不提供左右平衡。</p>

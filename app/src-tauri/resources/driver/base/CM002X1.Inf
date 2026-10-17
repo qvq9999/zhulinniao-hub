@@ -1,0 +1,291 @@
+;
+;C-Media Electronics, Inc. USB Gaming Headset Driver
+;
+
+[Version]
+signature="$WINDOWS NT$"
+Class=Media
+ClassGUID={4d36e96c-e325-11ce-bfc1-08002be10318}
+Provider=%CMEDIA%
+Catalogfile=CM002X1.cat
+DriverVer=04/15/2026,11.1.3.2
+PnpLockdown=1
+
+[SourceDisksNames]
+1000=%cdname%,,,
+
+[SourceDisksFiles.amd64]
+CM002X1.sys=1000,\x64
+CEB122D4.crt=1000,\x64
+
+[SignatureAttributes]
+CM002X1.sys=SignatureAttributes.DRM
+
+[SignatureAttributes.DRM]
+DRMLevel=1300
+
+[DestinationDirs]
+DefaultDestDir=12
+CM002X1.CopyFiles=12
+
+[Manufacturer]
+%ManufacturerString%=ManufacturerID,NTamd64.10.0
+
+[ManufacturerID.NTamd64.10.0]
+%CM002X1.DeviceDesc%=CM002X1,USB\VID_0D8C&PID_0334&MI_00
+%CM002X1.DeviceDesc%=CM002X1,USB\VID_4C4A&PID_4255&MI_00
+%CM002X1.DeviceDesc%=CM002X1,USB\VID_20F8&PID_A962&MI_00
+%CM002X1.DeviceDesc%=CM002X1,USB\VID_20F8&PID_A963&MI_00
+%CM002X1.DeviceDesc%=CM002X1,USB\VID_20F8&PID_A964&MI_00
+%CM002X1.DeviceDesc%=CM002X1,USB\VID_0E6A&PID_0110&MI_00
+%CM002X1.DeviceDesc%=CM002X1,USB\VID_046A&PID_01ED&MI_00
+
+
+;---------------------------------------------------------------
+;                x 64  D D I n s t a l l
+;---------------------------------------------------------------
+
+[CM002X1.NTamd64]
+Include=ks.inf, wdmaudio.inf
+Needs=KS.Registration, WDMAUDIO.Registration
+DelReg=CM002X1.DelReg
+AddReg=CM002X1.AddReg, CM002X1_NAMES.AddReg
+AddProperty=CM002X1Branding.AddProperty
+CopyFiles=CM002X1.CopyFiles
+
+[CM002X1Branding.AddProperty]
+DeviceVendorWebSite,,,,"https://www.cmedia.com.tw/" ; Place your URL here
+
+;---------------------------------------------------------------
+;                I n t e r f a c e s
+;---------------------------------------------------------------
+
+[CM002X1.NTamd64.Interfaces]
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_SPEAKER.WAVE%,Audio.I.SPEAKER.WAVE
+AddInterface=%KSCATEGORY_RENDER%,%KSNAME_SPEAKER.WAVE%,Audio.I.SPEAKER.WAVE
+
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_COMMSPEAKER.WAVE%,Audio.I.COMMSPEAKER.WAVE
+AddInterface=%KSCATEGORY_RENDER%,%KSNAME_COMMSPEAKER.WAVE%,Audio.I.COMMSPEAKER.WAVE
+
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_SPDIFOUT.WAVE%,Audio.I.SPDIFOUT.WAVE
+AddInterface=%KSCATEGORY_RENDER%,%KSNAME_SPDIFOUT.WAVE%,Audio.I.SPDIFOUT.WAVE
+
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_HPOUT.WAVE%,Audio.I.HPOUT.WAVE
+AddInterface=%KSCATEGORY_RENDER%,%KSNAME_HPOUT.WAVE%,Audio.I.HPOUT.WAVE
+
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_RECIN.WAVE%,Audio.I.RECIN.WAVE
+AddInterface=%KSCATEGORY_CAPTURE%,%KSNAME_RECIN.WAVE%,Audio.I.RECIN.WAVE
+
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_MICIN.WAVE%,Audio.I.MICIN.WAVE
+AddInterface=%KSCATEGORY_CAPTURE%,%KSNAME_MICIN.WAVE%,Audio.I.MICIN.WAVE
+
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_LINEIN.WAVE%,Audio.I.LINEIN.WAVE
+AddInterface=%KSCATEGORY_CAPTURE%,%KSNAME_LINEIN.WAVE%,Audio.I.LINEIN.WAVE
+
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_SPDIFIN.WAVE%,Audio.I.SPDIFIN.WAVE
+AddInterface=%KSCATEGORY_CAPTURE%,%KSNAME_SPDIFIN.WAVE%,Audio.I.SPDIFIN.WAVE
+
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_GLOBAL.TOPO%,Audio.I.GLOBAL.TOPO
+AddInterface=%KSCATEGORY_TOPOLOGY%,%KSNAME_GLOBAL.TOPO%,Audio.I.GLOBAL.TOPO
+
+[Audio.I.SPEAKER.WAVE]
+AddReg=CM002X1.I.SPEAKER.WAVE.AddReg
+
+[Audio.I.COMMSPEAKER.WAVE]
+AddReg=CM002X1.I.COMMSPEAKER.WAVE.AddReg
+
+[Audio.I.SPDIFOUT.WAVE]
+AddReg=CM002X1.I.SPDIFOUT.WAVE.AddReg
+
+[Audio.I.HPOUT.WAVE]
+AddReg=CM002X1.I.HPOUT.WAVE.AddReg
+
+[Audio.I.RECIN.WAVE]
+AddReg=CM002X1.I.RECIN.WAVE.AddReg
+
+[Audio.I.MICIN.WAVE]
+AddReg=CM002X1.I.MICIN.WAVE.AddReg
+
+[Audio.I.LINEIN.WAVE]
+AddReg=CM002X1.I.LINEIN.WAVE.AddReg
+
+[Audio.I.SPDIFIN.WAVE]
+AddReg=CM002X1.I.SPDIFIN.WAVE.AddReg
+
+[Audio.I.GLOBAL.TOPO]
+AddReg=CM002X1.I.GLOBAL.TOPO.AddReg, CM002X1.EPProperties.AddReg
+
+[CM002X1.EPProperties.AddReg]
+HKR,"EP\\0",%PKEY_AudioEndpoint_Association%,,%KSNODETYPE_HEADPHONES%
+HKR,"EP\\0",%PKEY_AudioEndpoint_Supports_EventDriven_Mode%,0x00010001,0x1
+
+HKR,"EP\\1",%PKEY_AudioEndpoint_Association%,,%KSNODETYPE_MICROPHONE%
+HKR,"EP\\1",%PKEY_AudioEndpoint_Supports_EventDriven_Mode%,0x00010001,0x1
+
+;---------------------------------------------------------------
+;                A d d R e g
+;---------------------------------------------------------------
+[CM002X1.AddReg]
+HKR,,Driver,,CM002X1.sys
+HKR,,AssociatedFilters,,"wdmaud,redbook"
+HKR,Drivers,SubClasses,,"wave,midi,mixer"
+HKR,Drivers\wave\wdmaud.drv, Driver,,wdmaud.drv
+HKR,Drivers\midi\wdmaud.drv, Driver,,wdmaud.drv
+HKR,Drivers\mixer\wdmaud.drv,Driver,,wdmaud.drv
+HKR,Drivers\wave\wdmaud.drv,Description,,%CM002X1.Audio.DeviceDesc%
+HKR,Drivers\midi\wdmaud.drv,Description,,%CM002X1.Audio.DeviceDesc%
+HKR,Drivers\mixer\wdmaud.drv,Description,,%CM002X1.Audio.DeviceDesc%
+
+[CM002X1_NAMES.AddReg]
+HKLM,%MediaCategories%\%CM002X1GUID.SpdifOut%,Name,,%CM002X1Node.SpdifOut%
+HKLM,%MediaCategories%\%CM002X1GUID.SpdifOut%,Display,1,00,00,00,00
+HKLM,%MediaCategories%\%CM002X1GUID.SpdifIn%,Name,,%CM002X1Node.SpdifIn%
+HKLM,%MediaCategories%\%CM002X1GUID.SpdifIn%,Display,1,00,00,00,00
+
+HKLM,%MediaCategories%\%HDAGuidStereoMixPin%,Name,,%HDAStereoMixPinName%
+HKLM,%MediaCategories%\%HDAGuidStereoMixPin%,Display,1,00,00,00,00
+HKLM,%MediaCategories%\%HDAGuidAuxInPin%,Name,,%HDAAuxInPinName%
+HKLM,%MediaCategories%\%HDAGuidAuxInPin%,Display,1,00,00,00,00
+
+[CM002X1.I.SPEAKER.WAVE.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%CM002X1.SPEAKER.WAVE.szPname%
+
+[CM002X1.I.COMMSPEAKER.WAVE.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%CM002X1.COMMSPEAKER.WAVE.szPname%
+
+[CM002X1.I.SPDIFOUT.WAVE.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%CM002X1.SPDIFOUT.WAVE.szPname%
+
+[CM002X1.I.HPOUT.WAVE.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%CM002X1.HPOUT.WAVE.szPname%
+
+[CM002X1.I.RECIN.WAVE.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%CM002X1.RECIN.WAVE.szPname%
+
+[CM002X1.I.MICIN.WAVE.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%CM002X1.MICIN.WAVE.szPname%
+
+[CM002X1.I.LINEIN.WAVE.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%CM002X1.LINEIN.WAVE.szPname%
+
+[CM002X1.I.SPDIFIN.WAVE.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%CM002X1.SPDIFIN.WAVE.szPname%
+
+[CM002X1.I.GLOBAL.TOPO.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%CM002X1.GLOBAL.TOPO.szPname%
+
+
+
+;---------------------------------------------------------------
+;                D e l R e g
+;---------------------------------------------------------------
+
+[CM002X1.DelReg]
+HKR,Settings
+
+;---------------------------------------------------------------
+;                S e r v i c e s  
+;---------------------------------------------------------------
+
+[CM002X1.NTamd64.Services]
+AddService=CM002X1, 0x00000002, CM002X1.ServiceInstall
+
+[CM002X1.ServiceInstall]
+DisplayName=%CM002X1.SvcDesc%
+ServiceType=%SERVICE_KERNEL_DRIVER%
+StartType=%SERVICE_DEMAND_START%
+ErrorControl=%SERVICE_ERROR_NORMAL%
+ServiceBinary=%12%\CM002X1.sys
+
+;---------------------------------------------------------------
+;                Copy Files
+;---------------------------------------------------------------
+
+[CM002X1.CopyFiles]
+CM002X1.SYS
+CEB122D4.crt
+
+;---------------------------------------------------------------
+;                S t r i n g s
+;---------------------------------------------------------------
+
+[Strings]
+; non-localizeable
+Proxy.CLSID="{17CCA71B-ECD7-11D0-B908-00A0C9223196}"
+KSCATEGORY_RENDER="{65E8773E-8F56-11D0-A3B9-00A0C9223196}"
+KSCATEGORY_CAPTURE="{65E8773D-8F56-11D0-A3B9-00A0C9223196}"
+KSCATEGORY_AUDIO="{6994AD04-93EF-11D0-A3CC-00A0C9223196}"
+KSCATEGORY_TOPOLOGY = "{DDA54A40-1E4C-11D1-A050-405705C10000}" ; non-localizable
+KSCATEGORY_REALTIME = "{EB115FFC-10C8-4964-831D-6DCB02E6F23F}" ; non-localizable
+
+KSNAME_SPEAKER.WAVE="SPKOut00Wave"
+KSNAME_COMMSPEAKER.WAVE="CommSPKOut00Wave"
+KSNAME_SPDIFOUT.WAVE="SPDIFOut00Wave"
+KSNAME_HPOUT.WAVE="HPOut00Wave"
+KSNAME_RECIN.WAVE="RecIn00Wave"
+KSNAME_MICIN.WAVE="MicIn00Wave"
+KSNAME_LINEIN.WAVE="LineIn00Wave"
+KSNAME_SPDIFIN.WAVE="SPDIFIn00Wave"
+KSNAME_GLOBAL.TOPO="GlobalTopo"
+
+SERVICE_KERNEL_DRIVER=1
+SERVICE_DEMAND_START=3
+SERVICE_ERROR_NORMAL=1
+REG_DWORD=0x00010001
+
+MediaCategories="SYSTEM\CurrentControlSet\Control\MediaCategories"
+
+;localizeable
+CM002X1GUID.SpdifOut="{12C15946-BA58-42c1-9F11-8341E2198622}"
+CM002X1GUID.SpdifIn	="{017D895C-7AE7-4f4d-B78C-CD1FFC0CE776}"
+HDAGuidStereoMixPin 		="{8c5716e6-c984-492e-a2fb-1385f2d0f3c9}"
+HDAGuidAuxInPin 		="{5f4bb488-a646-408a-9265-8647f9c374d4}"
+
+CMEDIA="C-Media"
+ManufacturerString="C-Media Electronics, Inc."
+CM002X1.DeviceDesc="USB Gaming Headset"
+CM002X1.SvcDesc="USB Gaming Headset"
+CM002X1.SPEAKER.WAVE.szPname="Speaker"
+CM002X1.COMMSPEAKER.WAVE.szPname="Communication Speaker"
+CM002X1.SPDIFOUT.WAVE.szPname="SpdifOut"
+CM002X1.HPOUT.WAVE.szPname="Headphone"
+CM002X1.RECIN.WAVE.szPname="Capture"
+CM002X1.MICIN.WAVE.szPname="MicIn"
+CM002X1.LINEIN.WAVE.szPname="LineIn"
+CM002X1.SPDIFIN.WAVE.szPname="SpdifIn"
+CM002X1.GLOBAL.TOPO.szPname="Global Mixer"
+CM002X1.Audio.DeviceDesc="USB Gaming Headset Audio"
+cdname="C-Media Electronics, Inc. USB Gaming Headset Installation Disk"
+CM002X1Node.SpdifOut="SPDIF Out"
+CM002X1Node.SpdifIn="SPDIF In"
+HDAStereoMixPinName="Stereo Mix"
+HDAAuxInPinName="Aux In"
+
+;; These are the name strings for the wave miniports displayed in mmsys.cpl
+;;
+KSNODETYPE_ANY                    = "{00000000-0000-0000-0000-000000000000}"
+KSNODETYPE_SPEAKER                = "{DFF21CE1-F70F-11D0-B917-00A0C9223196}"
+KSNODETYPE_LINE_CONNECTOR         = "{DFF21FE3-F70F-11D0-B917-00A0C9223196}"
+KSNODETYPE_HEADSET_SPEAKERS       = "{DFF21CE6-F70F-11D0-B917-00A0C9223196}"
+KSNODETYPE_HEADPHONES             = "{DFF21CE2-F70F-11D0-B917-00A0C9223196}"
+KSNODETYPE_DESKTOP_SPEAKER        = "{DFF21CE4-F70F-11D0-B917-00A0C9223196}"
+KSNODETYPE_SPDIF_INTERFACE        = "{DFF21FE5-F70F-11D0-B917-00A0C9223196}"
+KSNODETYPE_MICROPHONE             = "{DFF21BE1-F70F-11D0-B917-00A0C9223196}"
+KSNODETYPE_DESKTOP_MICROPHONE     = "{DFF21BE2-F70F-11D0-B917-00A0C9223196}"
+KSNODETYPE_HEADSET                = "{DFF21DE2-F70F-11D0-B917-00A0C9223196}"
+
+;;
+;; PropertyKey GUIDS
+;;
+PKEY_AudioEndpoint_Association  = "{1DA5D803-D492-4EDD-8C23-E0C0FFEE7F0E},2"
+PKEY_AudioEndpoint_Supports_EventDriven_Mode = "{1DA5D803-D492-4EDD-8C23-E0C0FFEE7F0E},7"
+

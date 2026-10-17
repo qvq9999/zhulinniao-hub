@@ -3,10 +3,11 @@ import {
   Languages,
   SunMoon,
   Power,
-  Info,
+  X,
   Copy,
   RefreshCw,
   ChevronDown,
+  Github,
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
@@ -14,24 +15,29 @@ import SwitchRow from '../components/SwitchRow';
 import Segmented from '../components/Segmented';
 import FitScale from '../components/FitScale';
 import { useDevice } from '../device/DeviceContext';
+import { useSetting } from '../state/settings';
 import {
   errText,
   tauriDeviceDetails,
   tauriGetAutostart,
   tauriSetAutostart,
   tauriSetDefault,
+  type CloseAction,
   type DeviceDetailsDto,
 } from '../device/tauriBridge';
 
 /**
- * 信息页 — 对齐原版「装置设置及信息」（JackSetting）+「信息」（Information）窗口：
+ * 设置页（原「信息」页，按用户要求改名）—
+ * 对齐原版「装置设置及信息」（JackSetting）+「信息」（Information）窗口，并承载本产品自身的窗口行为设置：
  *   - 装置信息：装置名称 / 固件版本 / 硬件驱动版本（真实读取）
  *     ⚠️ 语言文件里的「编解码器名称」在原版 XAML 中**没有对应的值标签**（JackSetting.xaml 只有 3 行），
  *        属未使用残留，故此处同样不展示，避免显示不存在的信息。
  *   - 装置格式：IAudioClient::GetMixFormat 真实读取（只读，原版支持切换但我们无写入通道）
  *   - 默认装置设置：默认装置 / 默认通讯装置（真实可写）
- *   - 音频装置列表：播放 / 录音端点真实枚举
- *   - 通用设置：语言 / 主题 / 开机自启动
+ *   - 通用设置：语言 / 主题 / 开机自启动 / 关闭窗口时（点 × 的行为）
+ *
+ * 说明：关闭策略在本页只改设置值，实际同步给后端由常驻的 CloseConfirm 组件统一完成，
+ * 避免两处各写一份导致状态漂移。
  */
 
 type ThemeVal = 'light' | 'dark' | 'system';
@@ -49,7 +55,8 @@ export default function Device() {
   const [theme, setTheme] = useState<ThemeVal>('light');
   const [autorun, setAutorun] = useState(false);
   const [autostartNote, setAutostartNote] = useState<string | null>(null);
-  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [closeAction, setCloseAction] = useSetting<CloseAction>('closeAction', 'ask');
 
   const loadDetails = useCallback(async () => {
     try {
@@ -108,23 +115,31 @@ export default function Device() {
     else root.removeAttribute('data-theme');
   }, [theme]);
 
+  const toast = (msg: string) => {
+    setToastMsg(msg);
+    window.setTimeout(() => setToastMsg(null), 2000);
+  };
+
+  const copyText = (text: string, ok: string) => {
+    if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
+    toast(ok);
+  };
+
   const copySerial = () => {
-    if (info?.serial && navigator.clipboard) navigator.clipboard.writeText(info.serial).catch(() => {});
-    setToastVisible(true);
-    window.setTimeout(() => setToastVisible(false), 2000);
+    if (info?.serial) copyText(info.serial, '已复制序列号');
   };
 
   return (
     <div className="app">
       <Sidebar />
       <div className="main">
-        <Topbar crumbs="信息 · 装置设置及信息" />
+        <Topbar crumbs="设置 · 装置设置及信息" />
 
         <main className="canvas">
           <FitScale>
           <div className="page-head">
             <div className="page-head__text">
-              <h1 className="page-title">信息</h1>
+              <h1 className="page-title">设置</h1>
               <p className="page-desc">装置设置及信息、默认装置与通用设置。</p>
             </div>
             <div className="page-head__actions">
@@ -223,7 +238,7 @@ export default function Device() {
             <p className="field__hint">调用系统默认端点设置接口后立即回读核对（不乐观更新）。</p>
           </section>
 
-          {/* 通用设置（通栏四格） */}
+          {/* 通用设置（通栏四格：语言 / 主题 / 开机自启动 / 关闭窗口时） */}
           <section className="panel">
             <div className="panel__head">
               <h2 className="panel__title">通用设置</h2>
@@ -235,55 +250,97 @@ export default function Device() {
                   <span className="field__label">语言</span>
                 </div>
                 <div className="select" style={{ maxWidth: 200 }}>
-                    <select aria-label="界面语言" value={language} onChange={(e) => setLanguage(e.target.value)}>
-                      <option>简体中文</option>
-                    </select>
-                    <ChevronDown size={16} strokeWidth={1.5} />
-                  </div>
-                  <p className="field__hint">原版含 16 种语言资源；当前仅提供简体中文。</p>
+                  <select aria-label="界面语言" value={language} onChange={(e) => setLanguage(e.target.value)}>
+                    <option>简体中文</option>
+                  </select>
+                  <ChevronDown size={16} strokeWidth={1.5} />
                 </div>
+                <p className="field__hint">原版含 16 种语言资源；当前仅提供简体中文。</p>
+              </div>
 
-                <div className="settings-cell">
-                  <div className="field__row">
-                    <SunMoon size={16} strokeWidth={1.5} />
-                    <span className="field__label">主题</span>
-                  </div>
-                  <Segmented
-                    ariaLabel="界面主题"
-                    options={[
-                      { value: 'light', label: '浅色' },
-                      { value: 'dark', label: '深色' },
-                      { value: 'system', label: '跟随系统' },
-                    ]}
-                    value={theme}
-                    onChange={(v) => setTheme(v as ThemeVal)}
-                  />
-                  <p className="field__hint">仅切换界面配色，不影响音频效果。</p>
+              <div className="settings-cell">
+                <div className="field__row">
+                  <SunMoon size={16} strokeWidth={1.5} />
+                  <span className="field__label">主题</span>
                 </div>
+                <Segmented
+                  ariaLabel="界面主题"
+                  options={[
+                    { value: 'light', label: '浅色' },
+                    { value: 'dark', label: '深色' },
+                    { value: 'system', label: '跟随系统' },
+                  ]}
+                  value={theme}
+                  onChange={(v) => setTheme(v as ThemeVal)}
+                />
+                <p className="field__hint">仅切换界面配色，不影响音频效果。</p>
+              </div>
 
-                <div className="settings-cell">
-                  <SwitchRow
-                    label="开机自启动"
-                    icon={Power}
-                    checked={autorun}
-                    onChange={onAutostartChange}
-                    hint={autostartNote ?? '写入系统启动项（注册表 Run），开机后自动启动本软件。'}
-                  />
-                </div>
+              <div className="settings-cell">
+                <SwitchRow
+                  label="开机自启动"
+                  icon={Power}
+                  checked={autorun}
+                  onChange={onAutostartChange}
+                  hint={autostartNote ?? '写入系统启动项（注册表 Run），开机后自动启动本软件。'}
+                />
+              </div>
 
-                <div className="settings-cell">
-                  <div className="field__row">
-                    <Info size={18} strokeWidth={1.5} style={{ color: 'var(--muted)' }} />
-                    <span className="field__label">关于朱雀耳机 Hub</span>
-                  </div>
-                  <p className="field__hint">版本 0.1.0 · UI 重置版（功能与选项集严格对齐原版 ZG3）</p>
+              <div className="settings-cell">
+                <div className="field__row">
+                  <X size={16} strokeWidth={1.5} />
+                  <span className="field__label">关闭窗口时</span>
                 </div>
+                <Segmented
+                  ariaLabel="关闭窗口时的行为"
+                  options={[
+                    { value: 'ask', label: '每次询问' },
+                    { value: 'minimize', label: '最小化' },
+                    { value: 'exit', label: '直接退出' },
+                  ]}
+                  value={closeAction}
+                  onChange={(v) => setCloseAction(v as CloseAction)}
+                />
+                <p className="field__hint">
+                  「最小化」= 隐藏窗口并在任务栏托盘保留图标，点图标即可恢复；「直接退出」= 立即关闭程序。
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* 关于（版本 + 开源仓库地址） */}
+          <section className="panel" style={{ marginTop: 'var(--space-5)' }}>
+            <div className="panel__head">
+              <h2 className="panel__title">关于</h2>
+              <span className="pill" style={{ marginLeft: 'auto' }}>
+                1.0.0 · UI 重置版
+              </span>
+            </div>
+            <div className="about-row">
+              <div className="about-row__text">
+                <div className="about-row__name">朱雀耳机 Hub</div>
+                <p className="field__hint" style={{ margin: 0 }}>
+                  功能与选项集严格对齐原版 ZG3；已内置 C-Media 音频驱动组件，无需单独安装原版驱动。
+                </p>
+              </div>
+              <div className="about-row__repo">
+                <Github size={16} strokeWidth={1.5} />
+                <span className="about-row__url mono">github.com/qvq9999/zhulinniao-hub</span>
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  onClick={() => copyText('https://github.com/qvq9999/zhulinniao-hub', '已复制仓库地址')}
+                >
+                  <Copy size={16} strokeWidth={1.5} />
+                  复制地址
+                </button>
+              </div>
             </div>
           </section>
           </FitScale>
         </main>
       </div>
-      {toastVisible && <div className="toast is-visible">已复制序列号</div>}
+      {toastMsg && <div className="toast is-visible">{toastMsg}</div>}
     </div>
   );
 }

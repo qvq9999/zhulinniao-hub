@@ -15,14 +15,14 @@ interface NavEntry {
 
 /**
  * 导航项 = 原版对 ZG3 实际提供的范围：
- * 概览 / 音效控制（耳机 7 项）/ 麦克风（2 项）/ 信息（装置设置及信息）。
+ * 概览 / 音效控制（耳机 7 项）/ 麦克风（2 项）/ 设置（装置设置及信息 + 通用设置）。
  * 原版未开放的空间音频、超感听觉、LED 已整页下架（本设备通道不存在，见 docs/原版对齐规格.md）。
  */
 const NAV_ITEMS: NavEntry[] = [
   { to: '/overview', label: '概览', Icon: LayoutDashboard },
   { to: '/sound', label: '音效控制', Icon: SlidersHorizontal },
   { to: '/mic', label: '麦克风', Icon: Mic },
-  { to: '/device', label: '信息', Icon: Settings2 },
+  { to: '/device', label: '设置', Icon: Settings2 },
 ];
 
 /**

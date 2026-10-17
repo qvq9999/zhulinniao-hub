@@ -189,6 +189,28 @@ export function tauriRelaunchElevated(): Promise<void> {
   return invoke<void>('relaunch_elevated');
 }
 
+// ---------- 窗口行为：点 × 时「最小化到后台 / 关闭程序」 ----------
+
+/** 关闭策略：每次询问 / 最小化到后台 / 直接退出 */
+export type CloseAction = 'ask' | 'minimize' | 'exit';
+
+export function tauriSetCloseAction(action: CloseAction): Promise<void> {
+  return invoke<void>('window_set_close_action', { action });
+}
+
+/** 执行关闭询问弹窗的选择：minimize 隐藏到托盘；exit 退出程序；cancel 仅关闭弹窗 */
+export function tauriWindowAction(action: 'minimize' | 'exit' | 'cancel'): Promise<void> {
+  return invoke<void>('window_action', { action });
+}
+
+/** 监听后端「用户点了 ×」事件（仅 ask 策略下触发） */
+export async function onCloseRequested(cb: () => void): Promise<() => void> {
+  const un = await listen('hub://window/close-requested', () => cb());
+  return () => {
+    void un();
+  };
+}
+
 // ---------- 本地设置持久化（appConfigDir/settings.json） ----------
 
 export function tauriSettingsLoad(): Promise<string> {

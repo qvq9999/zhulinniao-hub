@@ -223,6 +223,7 @@ interface ImportReport { imported: string[]; skipped: string[]; failed: { file: 
 | `hub://device/changed` | `DeviceInfo` | 设备信息变化（电量等） |
 | `hub://tier/status` | `{ tier1: 'up'\|'down'; tier2: 'up'\|'down' }` | 通道健康 |
 | `hub://firmware/progress` | `{ percent: number }` | 固件进度（如实现） |
+| `hub://window/close-requested` | `null` | 用户点了窗口 ×，且策略为「每次询问」 |
 
 ---
 
@@ -231,3 +232,25 @@ interface ImportReport { imported: string[]; skipped: string[]; failed: { file: 
 - 前端 `src/lib/api/` 封装所有 invoke，统一处理 `CommandResult` 封套与错误码 → 用户可读提示。
 - MSW Mock 依据本契约 + `docs/schemas/*.schema.json` 生成，覆盖 code=0 与至少 2001/3001/4001 三个错误分支。
 - 契约变更流程：修改本文件 → 通过 team-lead 同步前后端 → 更新 TS 类型。
+
+---
+
+## 8. 窗口行为（点 × 的最小化/关闭）
+
+实现：`src-tauri/src/window.rs`（拦截 `WindowEvent::CloseRequested`）。
+
+| 命令 | 参数 | 返回 | 说明 |
+|------|------|------|------|
+| `window_set_close_action` | `{ action: 'ask' \| 'minimize' \| 'exit' }` | `void` | 同步当前策略到后端运行时状态；前端在设置加载完成与变更时各调用一次 |
+| `window_action` | `{ action: 'minimize' \| 'exit' \| 'cancel' }` | `void` | 执行关闭询问弹窗的选择：`minimize` 隐藏窗口并在托盘创建图标，`exit` 退出进程，`cancel` 仅关闭弹窗 |
+
+策略语义：
+
+- `ask`：拦截关闭 → 恢复并聚焦窗口 → 发 `hub://window/close-requested` → 前端弹询问窗。
+- `minimize`：拦截关闭 → 隐藏主窗口 + **惰性**创建托盘图标（左键单击或菜单「打开主界面」恢复；恢复后立即移除托盘图标）。
+- `exit`：不拦截，交给 Tauri 正常退出。
+
+持久化键：`settings.json` 的 `closeAction`（与设置页「关闭窗口时」同一个键）。
+
+已知限制：无单实例保护——隐藏到托盘后再次启动会开第二个实例（见待办）。
+

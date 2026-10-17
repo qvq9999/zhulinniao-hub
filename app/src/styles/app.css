@@ -503,6 +503,44 @@ body { overflow: hidden; }
 .toast.is-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast svg { width: 18px; height: 18px; color: var(--success); }
 
+/* ---------- Modal（点 × 的关闭确认弹窗） ---------- */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 80;
+  display: grid; place-items: center;
+  padding: var(--space-5);
+  background: rgba(26, 29, 31, 0.36);
+}
+.modal {
+  width: 448px; max-width: 100%;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: var(--space-5);
+  box-shadow: var(--elev-raised); outline: none;
+}
+.modal__head { display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-3); }
+.modal__title { font-size: var(--text-lg); font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+.modal__close {
+  margin-left: auto; flex: none; display: grid; place-items: center;
+  width: 28px; height: 28px; border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--muted); cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard);
+}
+.modal__close:hover { background: var(--surface-2); color: var(--fg); }
+.modal__desc { font-size: var(--text-sm); color: var(--muted); line-height: var(--leading-body); margin: 0 0 var(--space-4); }
+.modal__remember { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); cursor: pointer; }
+.modal__remember input { width: 15px; height: 15px; accent-color: var(--accent); }
+.modal__error { margin: var(--space-3) 0 0; }
+.modal__actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-5); }
+
+/* 面板头部的右侧说明（替代原「关于」格子，避免栅格多出一行） */
+.panel__note { margin-left: auto; font-size: var(--text-xs); color: var(--muted); text-align: right; }
+
+/* ---------- 关于（版本 + 仓库地址） ---------- */
+.about-row { display: flex; align-items: center; gap: var(--space-5); flex-wrap: wrap; }
+.about-row__text { flex: 1 1 320px; min-width: 240px; }
+.about-row__name { font-size: var(--text-sm); font-weight: 600; margin-bottom: 2px; }
+.about-row__repo { display: flex; align-items: center; gap: var(--space-2); color: var(--muted); }
+.about-row__url { font-size: var(--text-sm); color: var(--fg); user-select: all; }
+
 /* ---------- Inline status ---------- */
 .inline-status { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); }
 .inline-status svg { width: 16px; height: 16px; flex: none; }

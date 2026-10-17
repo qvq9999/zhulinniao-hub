@@ -7,6 +7,7 @@ mod commands;
 mod device;
 mod device_info;
 mod device_monitor;
+mod window;
 
 use device_monitor::DeviceMonitor;
 use std::sync::Arc;
@@ -18,6 +19,11 @@ pub fn run() {
 
     tauri::Builder::default()
         .manage(monitor)
+        .manage(window::CloseActionState::default())
+        // 点 × 的拦截：按「每次询问 / 最小化到后台 / 直接退出」策略处理
+        .on_window_event(|win, event| {
+            window::on_window_event(win, event);
+        })
         .setup(|app| {
             // Rust 侧看门狗：每 3s 主动执行页面探针并写盘（Rust 侧状态 + JS 侧 DOM 双通道）。
             // 页面 JS 定时器一旦不执行（线程卡死/渲染器异常），JS 通道缺失即可定位。
@@ -114,7 +120,9 @@ pub fn run() {
             apo::apo_eq_write,
             apo::apo_fields_read,
             apo::apo_field_write,
-            apo::relaunch_elevated
+            apo::relaunch_elevated,
+            window::window_set_close_action,
+            window::window_action
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

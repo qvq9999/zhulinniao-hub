@@ -317,6 +317,20 @@ pub mod fx_reg {
     pub const MICEQ_HPF_FC: u32 = 4;
     pub const MICEQ_PREGAIN: u32 = 5;
 
+    /// 端点是否真的带 CAPX 用户效果区（MFX 上下文 `\User` 存在）。
+    ///
+    /// 为什么必须判：驱动重装/设备重插后，系统里会同时留下多个**同名**端点
+    /// （本机实测有两个以上 `ZhuAudio ZG3`），只有继承了扩展 INF 属性区的那个才有
+    /// `FxProperties\{4C6C316B-…}\User`。按名字取第一个会拿到空壳端点，
+    /// 表现为「开关点不动」「写入失败：系统找不到指定的文件」。
+    fn has_user_fx_store(guid: &str, capture: bool) -> bool {
+        use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ};
+        use winreg::RegKey;
+        let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+        let path = user_store_path_flow(guid, super::CTX_MFX_GUID, capture);
+        hklm.open_subkey_with_flags(&path, KEY_READ).is_ok()
+    }
+
     /// 命中耳机端点 GUID（capture=true 取录音方向；与音量通道同一套关键字）
     pub fn endpoint_guid(capture: bool) -> Result<String, String> {
         if capture {
@@ -348,6 +362,8 @@ pub mod fx_reg {
                     .map_err(|e| format!("音频子系统初始化失败：{e}"))?;
             if let Ok(collection) = enumerator.EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE) {
                 let count = collection.GetCount().unwrap_or(0);
+                // 同名端点可能有多个：优先选真正带 CAPX 效果区的那个，其余留作回退
+                let mut fallback: Option<String> = None;
                 for i in 0..count {
                     if let Ok(dev) = collection.Item(i) {
                         let name = (|| -> windows::core::Result<String> {
@@ -366,11 +382,20 @@ pub mod fx_reg {
                         {
                             if let Ok(id) = dev.GetId() {
                                 if let Ok(g) = id.to_string() {
-                                    return Ok(g.rsplit('.').next().unwrap_or(&g).to_string());
+                                    let guid = g.rsplit('.').next().unwrap_or(&g).to_string();
+                                    if has_user_fx_store(&guid, true) {
+                                        return Ok(guid);
+                                    }
+                                    if fallback.is_none() {
+                                        fallback = Some(guid);
+                                    }
                                 }
                             }
                         }
                     }
+                }
+                if let Some(g) = fallback {
+                    return Ok(g);
                 }
             }
             let dev = enumerator
@@ -421,6 +446,8 @@ pub mod fx_reg {
                 enumerator.EnumAudioEndpoints(eRender as EDataFlow, DEVICE_STATE_ACTIVE)
             {
                 let count = collection.GetCount().unwrap_or(0);
+                // 同名端点可能有多个：优先选真正带 CAPX 效果区的那个，其余留作回退
+                let mut fallback: Option<String> = None;
                 for i in 0..count {
                     if let Ok(dev) = collection.Item(i) {
                         let name = (|| -> windows::core::Result<String> {
@@ -433,11 +460,20 @@ pub mod fx_reg {
                         if is_headset(&name) {
                             if let Ok(id) = dev.GetId() {
                                 if let Ok(s) = id.to_string() {
-                                    return Ok(s.rsplit('.').next().unwrap_or(&s).to_string());
+                                    let guid = s.rsplit('.').next().unwrap_or(&s).to_string();
+                                    if has_user_fx_store(&guid, false) {
+                                        return Ok(guid);
+                                    }
+                                    if fallback.is_none() {
+                                        fallback = Some(guid);
+                                    }
                                 }
                             }
                         }
                     }
+                }
+                if let Some(g) = fallback {
+                    return Ok(g);
                 }
             }
 
@@ -538,6 +574,23 @@ pub mod fx_reg {
         fields_read()
     }
 
+    /// 效果区打不开时给出可执行的解释。
+    ///
+    /// 最常见原因不是权限，而是**厂商音频驱动没装/没生效**：设备回退到系统自带的
+    /// `usbaudio`（UAC1 类驱动）后，注册表里根本不存在 `FxProperties\{CAPX}\User`，
+    /// 表现为「所有效果开关灰掉 / 点不开」。此时裸的 os error 2 对用户毫无意义。
+    fn store_open_err(path: &str, e: &std::io::Error) -> String {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            format!(
+                "未找到厂商音频驱动效果区：设备可能正在使用系统自带的 USB Audio 驱动。\
+                 请运行「竹林鸟朱雀 Hub」安装包（会一并安装 C-Media 音频驱动），装好后重开本程序。\
+                 [路径] {path}"
+            )
+        } else {
+            format!("打开用户效果区失败（{path}）：{e}")
+        }
+    }
+
     pub fn read_named(
         capture: bool,
         context: &str,
@@ -548,7 +601,7 @@ pub mod fx_reg {
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
         let key = hklm
             .open_subkey_with_flags(&path, KEY_READ)
-            .map_err(|e| format!("打开用户效果区失败（{path}）：{e}"))?;
+            .map_err(|e| store_open_err(&path, &e))?;
         Ok(pairs
             .iter()
             .map(|(g, pid)| read_dword_named(&key, g, *pid).unwrap_or(i32::MIN))
@@ -558,7 +611,7 @@ pub mod fx_reg {
     fn open_for_write(path: &str) -> Result<RegKey, String> {
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
         hklm.open_subkey_with_flags(path, KEY_READ | KEY_SET_VALUE)
-            .map_err(|e| format!("打开用户效果区失败（{path}）：{e}"))
+            .map_err(|e| store_open_err(path, &e))
     }
 
     fn write_dword(key: &RegKey, pid_guid: &str, pid: u32, v: i32) -> Result<(), String> {
@@ -685,7 +738,7 @@ pub mod fx_reg {
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
         let key = hklm
             .open_subkey_with_flags(&path, KEY_READ)
-            .map_err(|e| format!("打开用户效果区失败：{e}"))?;
+            .map_err(|e| store_open_err(&path, &e))?;
         let g = guid_lc(super::EQ_PKEY_GUID);
         let mut snap = read_eq_arrays(&key, &g);
         snap.store_path = path;

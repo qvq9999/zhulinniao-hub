@@ -1,6 +1,6 @@
 [package]
 name = "zhulinniao-hub"
-version = "0.1.0"
+version = "1.0.0"
 description = "竹林鸟朱雀耳机 Hub（CM002X1）— 原版驱动 UI 重置版"
 edition = "2021"
 default-run = "zhulinniao-hub"
@@ -13,7 +13,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 hidapi = "2"

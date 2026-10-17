@@ -99,11 +99,14 @@ export default function Sound() {
   const writeTimer = useRef<number>(0);
 
   /**
-   * 参数面板固定高度：以「均衡器」面板为基准量一次，
+   * 参数面板高度锁定：以「均衡器」面板的实测高度为基准，
    * 之后切到其它效果页签时面板高度保持不变，整页不会忽大忽小。
+   *
+   * ⚠️ 不能只在挂载时量一次：真机回读后若该效果为「未启用」，面板顶部会多出
+   * 一条提示条（约 38px），一次性测量会锁定成偏小的值 → 均衡器页签比其它页签高出一截，
+   * 切页签时整页缩一下（用户投诉过的「忽大忽小」）。故每次进入均衡器页签都复测，只允许向上更新。
    */
   const paramRef = useRef<HTMLElement | null>(null);
-  const measuredRef = useRef(false);
   const [paramMinH, setParamMinH] = useState<number | undefined>(undefined);
 
   const load = useCallback(async () => {
@@ -124,19 +127,17 @@ export default function Sound() {
     void load();
   }, [load]);
 
-  /** 仅在「均衡器」页签量一次自然高度（此时未加 min-height，量到的是真实内容高度） */
+  /** 每次进入「均衡器」页签复测面板高度（见上：只增不减，避免锁成偏小值）。
+      依赖只取 active/ready：ready 与「未启用提示条」在同一次渲染中落定，够用。 */
   useEffect(() => {
-    if (measuredRef.current || active !== 'eq' || !ready) return;
-    const el = paramRef.current;
-    if (!el) return;
+    if (active !== 'eq' || !ready) return;
     const raf = window.requestAnimationFrame(() => {
+      const el = paramRef.current;
+      if (!el) return;
       const innerEl = document.querySelector<HTMLElement>('.fit__inner');
       const z = Number.parseFloat(innerEl?.style.zoom || '1') || 1;
-      const h = el.getBoundingClientRect().height / z; // 去掉 zoom 影响，得到布局高度
-      if (h > 0) {
-        measuredRef.current = true;
-        setParamMinH(Math.ceil(h));
-      }
+      const h = Math.ceil(el.getBoundingClientRect().height / z); // 去掉 zoom 影响，得到布局高度
+      if (h > 0) setParamMinH((prev) => (prev === undefined || h > prev + 1 ? h : prev));
     });
     return () => window.cancelAnimationFrame(raf);
   }, [active, ready]);

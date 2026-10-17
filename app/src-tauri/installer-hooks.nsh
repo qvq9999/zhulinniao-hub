@@ -15,6 +15,13 @@
 ; 因此三者必须按 base -> apo -> ext 的顺序安装，且安装器需以管理员身份运行
 ; （tauri.conf.json 里 installMode = perMachine）。
 ;
+; ⚠️ 32 位安装器必须经 Sysnative 访问 64 位 pnputil（2026-10-17 实测事故）：
+;    NSIS 安装器是 32 位进程，`$SYSDIR\pnputil.exe` 会被 WOW64 文件重定向到
+;    C:\Windows\SysWOW64\，而该目录**不存在 pnputil.exe** → CreateProcess 失败 →
+;    nsExec 返回 "error" → 四个返回值全变 9999，界面报「Audio driver components
+;    could not be installed completely」。必须用 %WINDIR%\Sysnative\pnputil.exe
+;    （仅 32 位进程可见的别名，指向真正的 64 位 System32）。
+;
 ; 结果记录到 HKLM\SOFTWARE\ZhulinniaoHub\Driver，供应用启动时判断驱动是否就绪：
 ;   BaseRc / ApoRc / ExtRc  = pnputil 退出码（0 或 3010 视为成功；9999 = 启动失败）
 ;   Ok                      = 1 三个包全部成功
@@ -51,9 +58,18 @@
   Push $R5
   Push $R6
   Push $R7
+  Push $R8
+  Push $R9
 
   Delete "${ZHUB_LOG_FILE}"
   FileOpen $R4 "${ZHUB_LOG_FILE}" w
+
+  ; 解析 pnputil 路径：优先 Sysnative（32 位安装器访问 64 位 System32 的唯一别名）
+  StrCpy $R9 "$WINDIR\Sysnative\pnputil.exe"
+  ${IfNot} ${FileExists} "$R9"
+    StrCpy $R9 "$SYSDIR\pnputil.exe"
+  ${EndIf}
+  DetailPrint "Using pnputil: $R9"
 
   DetailPrint "Installing C-Media audio driver packages (stage base / apo / ext)..."
 
@@ -61,20 +77,20 @@
   ;    扩展 INF 必须先入库：设备安装时 PnP 才会把 FX\0 的 APO CLSID 与 AddComponent 应用到设备。
   ;    若顺序反了（先 base /install 再装 ext），会出现「驱动装上了、设备能出声，
   ;    但 APO 属性区没建立 → 所有音效开关灰掉」——本机已实测踩到，必须按此顺序。
-  nsExec::ExecToLog '"$SYSDIR\pnputil.exe" /add-driver "${ZHUB_DRV_ROOT}\base\CM002X1.Inf"'
+  nsExec::ExecToLog '"$R9" /add-driver "${ZHUB_DRV_ROOT}\base\CM002X1.Inf"'
   Pop $R1
-  nsExec::ExecToLog '"$SYSDIR\pnputil.exe" /add-driver "${ZHUB_DRV_ROOT}\apo\CM002X1_APO.inf"'
+  nsExec::ExecToLog '"$R9" /add-driver "${ZHUB_DRV_ROOT}\apo\CM002X1_APO.inf"'
   Pop $R2
-  nsExec::ExecToLog '"$SYSDIR\pnputil.exe" /add-driver "${ZHUB_DRV_ROOT}\ext\CM002X1_Ext.inf"'
+  nsExec::ExecToLog '"$R9" /add-driver "${ZHUB_DRV_ROOT}\ext\CM002X1_Ext.inf"'
   Pop $R3
 
   ; 2) 在设备上安装/更新基础驱动（此时扩展已入库，会一并应用）
   DetailPrint "Installing base driver on matching devices..."
-  nsExec::ExecToLog '"$SYSDIR\pnputil.exe" /add-driver "${ZHUB_DRV_ROOT}\base\CM002X1.Inf" /install'
+  nsExec::ExecToLog '"$R9" /add-driver "${ZHUB_DRV_ROOT}\base\CM002X1.Inf" /install'
   Pop $R5
 
   ; 3) 重启该设备，强制重新应用扩展 INF 与 APO 组件（设备未插入时返回非 0，不算失败）
-  nsExec::ExecToLog '"$SYSDIR\pnputil.exe" /restart-device /deviceid "USB\VID_0D8C&PID_0334&MI_00"'
+  nsExec::ExecToLog '"$R9" /restart-device /deviceid "USB\VID_0D8C&PID_0334&MI_00"'
   Pop $R6
 
   ; 4) 校验扩展 INF 是否真的落到设备硬件键上（读 FX\0 的 Enable_EQ_GFX）。
@@ -142,6 +158,7 @@
   ${If} $R4 != ""
     FileWrite $R4 "zhulinniao-hub driver install$\r$\n"
     FileWrite $R4 "driver_root=${ZHUB_DRV_ROOT}$\r$\n"
+    FileWrite $R4 "pnputil=$R9$\r$\n"
     FileWrite $R4 "stage: base=$R1 apo=$R2 ext=$R3$\r$\n"
     FileWrite $R4 "install_rc=$R5 restart_rc=$R6 fx_applied=$R7 ok=$R0$\r$\n"
     FileWrite $R4 "note: 0/3010 = success; 9999 = pnputil could not be launched$\r$\n"
@@ -159,6 +176,8 @@
 
   SetOutPath "$INSTDIR"
 
+  Pop $R9
+  Pop $R8
   Pop $R7
   Pop $R6
   Pop $R5

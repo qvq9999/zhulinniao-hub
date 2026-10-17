@@ -8,6 +8,8 @@ import {
   RefreshCw,
   ChevronDown,
   Github,
+  DownloadCloud,
+  CheckCircle2,
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
@@ -18,12 +20,18 @@ import { useDevice } from '../device/DeviceContext';
 import { useSetting } from '../state/settings';
 import {
   errText,
+  onUpdateProgress,
+  tauriAppVersion,
   tauriDeviceDetails,
   tauriGetAutostart,
   tauriSetAutostart,
   tauriSetDefault,
+  tauriUpdateCheck,
+  tauriUpdateDownload,
+  tauriUpdateInstall,
   type CloseAction,
   type DeviceDetailsDto,
+  type UpdateInfo,
 } from '../device/tauriBridge';
 
 /**
@@ -57,6 +65,74 @@ export default function Device() {
   const [autostartNote, setAutostartNote] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [closeAction, setCloseAction] = useSetting<CloseAction>('closeAction', 'ask');
+
+  // ---- 软件更新 ----
+  type UpdatePhase = 'idle' | 'checking' | 'latest' | 'available' | 'downloading' | 'installing' | 'error';
+  const [version, setVersion] = useState('—');
+  const [phase, setPhase] = useState<UpdatePhase>('idle');
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [updateMsg, setUpdateMsg] = useState('点「检查更新」获取 GitHub 上的最新版本与更新说明。');
+  const [percent, setPercent] = useState(-1);
+
+  useEffect(() => {
+    void tauriAppVersion()
+      .then(setVersion)
+      .catch(() => setVersion('—'));
+  }, []);
+
+  useEffect(() => {
+    let off: (() => void) | undefined;
+    void onUpdateProgress((p) => {
+      setPercent(p.percent);
+      if (p.percent >= 0) setUpdateMsg(`正在下载更新包… ${p.percent.toFixed(0)}%`);
+    }).then((fn) => {
+      off = fn;
+    });
+    return () => off?.();
+  }, []);
+
+  const checkUpdate = async () => {
+    setPhase('checking');
+    setPercent(-1);
+    setUpdateMsg('正在查询 GitHub 最新版本…');
+    try {
+      const info = await tauriUpdateCheck();
+      setUpdateInfo(info);
+      setVersion(info.current);
+      if (info.newer) {
+        setPhase('available');
+        const mb = info.assetSize ? `${(info.assetSize / 1024 / 1024).toFixed(1)} MB` : '';
+        setUpdateMsg(`发现新版本 ${info.latest}（当前 ${info.current}，更新包 ${mb}）`);
+      } else {
+        setPhase('latest');
+        setUpdateMsg(`已是最新版本 ${info.current}（GitHub 最新为 ${info.latest}）`);
+      }
+    } catch (e) {
+      setPhase('error');
+      setUpdateMsg(`检查更新失败：${errText(e)}`);
+    }
+  };
+
+  const runUpdate = async () => {
+    if (!updateInfo) return;
+    setPhase('downloading');
+    setPercent(-1);
+    setUpdateMsg('正在下载更新包…');
+    try {
+      const path = await tauriUpdateDownload(updateInfo.assetUrl, updateInfo.assetName, updateInfo.assetSize);
+      setPhase('installing');
+      setPercent(100);
+      setUpdateMsg('下载完成，正在启动静默安装…程序会自动关闭并重新打开（可能弹一次 UAC）。');
+      // 给界面一帧时间把状态渲染出来，再真正启动安装
+      await new Promise((r) => setTimeout(r, 600));
+      await tauriUpdateInstall(path);
+    } catch (e) {
+      setPhase('error');
+      setUpdateMsg(`更新失败：${errText(e)}`);
+    }
+  };
+
+  const updateBusy = phase === 'checking' || phase === 'downloading' || phase === 'installing';
 
   const loadDetails = useCallback(async () => {
     try {
@@ -136,7 +212,7 @@ export default function Device() {
         <Topbar crumbs="设置 · 装置设置及信息" />
 
         <main className="canvas">
-          <FitScale>
+          <FitScale scroll>
           <div className="page-head">
             <div className="page-head__text">
               <h1 className="page-title">设置</h1>
@@ -308,14 +384,15 @@ export default function Device() {
             </div>
           </section>
 
-          {/* 关于（版本 + 开源仓库地址） */}
+          {/* 关于与更新（版本 + 开源仓库 + 应用内更新） */}
           <section className="panel" style={{ marginTop: 'var(--space-5)' }}>
             <div className="panel__head">
-              <h2 className="panel__title">关于</h2>
+              <h2 className="panel__title">关于与更新</h2>
               <span className="pill" style={{ marginLeft: 'auto' }}>
-                1.0.0 · UI 重置版
+                {version} · UI 重置版
               </span>
             </div>
+
             <div className="about-row">
               <div className="about-row__text">
                 <div className="about-row__name">朱雀耳机 Hub</div>
@@ -335,6 +412,60 @@ export default function Device() {
                   复制地址
                 </button>
               </div>
+            </div>
+
+            <hr className="divider" />
+
+            <div className="update-row">
+              <div className="update-row__text">
+                <div className="about-row__name">
+                  软件更新
+                  {phase === 'latest' && <CheckCircle2 size={15} strokeWidth={1.6} className="update-ok" />}
+                </div>
+                <p className="field__hint" style={{ margin: 0 }}>
+                  {updateMsg}
+                </p>
+              </div>
+              <div className="update-row__actions">
+                <button
+                  type="button"
+                  className="btn btn--secondary"
+                  disabled={updateBusy}
+                  onClick={() => void checkUpdate()}
+                >
+                  <RefreshCw
+                    size={16}
+                    strokeWidth={1.5}
+                    style={phase === 'checking' ? { animation: 'spin 900ms linear infinite' } : undefined}
+                  />
+                  检查更新
+                </button>
+                {phase === 'available' && (
+                  <button type="button" className="btn btn--primary" onClick={() => void runUpdate()}>
+                    <DownloadCloud size={16} strokeWidth={1.5} />
+                    下载并安装
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {phase === 'downloading' && (
+              <div className="update-bar">
+                <div
+                  className="update-bar__fill"
+                  style={{ width: `${percent < 0 ? 35 : Math.max(2, Math.min(100, percent))}%` }}
+                />
+              </div>
+            )}
+
+            <div className="update-notes">
+              {updateInfo?.notes ? (
+                <pre className="update-notes__text">{updateInfo.notes}</pre>
+              ) : (
+                <p className="field__hint" style={{ margin: 0 }}>
+                  更新说明会显示在这里（来自 GitHub Release 的正文）。
+                </p>
+              )}
             </div>
           </section>
           </FitScale>

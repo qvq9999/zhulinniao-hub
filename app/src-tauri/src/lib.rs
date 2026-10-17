@@ -7,6 +7,7 @@ mod commands;
 mod device;
 mod device_info;
 mod device_monitor;
+mod update;
 mod window;
 
 use device_monitor::DeviceMonitor;
@@ -25,6 +26,8 @@ pub fn run() {
             window::on_window_event(win, event);
         })
         .setup(|app| {
+            // 清理上次更新留下的安装包残留（2 小时前的）
+            update::cleanup_stale();
             // Rust 侧看门狗：每 3s 主动执行页面探针并写盘（Rust 侧状态 + JS 侧 DOM 双通道）。
             // 页面 JS 定时器一旦不执行（线程卡死/渲染器异常），JS 通道缺失即可定位。
             let handle = app.handle().clone();
@@ -122,7 +125,11 @@ pub fn run() {
             apo::apo_field_write,
             apo::relaunch_elevated,
             window::window_set_close_action,
-            window::window_action
+            window::window_action,
+            update::app_version,
+            update::update_check,
+            update::update_download,
+            update::update_install
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

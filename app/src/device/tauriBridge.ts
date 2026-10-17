@@ -221,6 +221,54 @@ export function tauriSettingsSave(json: string): Promise<void> {
   return invoke<void>('settings_save', { json });
 }
 
+// ---------- 应用内更新（查 GitHub 最新 Release → 下载 → 静默覆盖安装） ----------
+
+export interface UpdateInfo {
+  /** 当前运行版本 */
+  current: string;
+  /** 远端最新版本（不含前导 v） */
+  latest: string;
+  newer: boolean;
+  /** Release 说明（精简更新内容） */
+  notes: string;
+  assetName: string;
+  assetUrl: string;
+  assetSize: number;
+  digest: string;
+}
+
+export interface UpdateProgress {
+  downloaded: number;
+  total: number;
+  /** -1 表示总量未知 */
+  percent: number;
+}
+
+export function tauriAppVersion(): Promise<string> {
+  return invoke<string>('app_version');
+}
+
+export function tauriUpdateCheck(): Promise<UpdateInfo> {
+  return invoke<UpdateInfo>('update_check');
+}
+
+/** 下载安装包到临时目录，返回本地绝对路径（过程中发 hub://update/progress） */
+export function tauriUpdateDownload(url: string, fileName: string, total: number): Promise<string> {
+  return invoke<string>('update_download', { url, fileName, total });
+}
+
+/** 启动静默安装并退出本程序（安装完成后会自动重新拉起） */
+export function tauriUpdateInstall(path: string): Promise<void> {
+  return invoke<void>('update_install', { path });
+}
+
+export async function onUpdateProgress(cb: (p: UpdateProgress) => void): Promise<() => void> {
+  const un = await listen<UpdateProgress>('hub://update/progress', (e) => cb(e.payload));
+  return () => {
+    void un();
+  };
+}
+
 /**
  * 统一错误文案：Tauri 的 Err(String) 以字符串形式 reject，
  * 直接读 .message 会得到 undefined（曾导致界面显示“写入失败：undefined”）。

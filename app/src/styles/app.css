@@ -113,6 +113,15 @@ body { overflow: hidden; }
 /* ---------- 自适应缩放容器（内容超限等比缩小，页面不滚动） ---------- */
 .fit { flex: 1; min-height: 0; position: relative; overflow: hidden; }
 .fit__inner { width: 100%; }
+/* 长页面（如设置页）不缩小字号，改为纵向滚动：字体与其他页面保持一致 */
+.fit.fit--scroll { overflow-y: auto; overflow-x: hidden; padding-right: 2px; }
+.fit.fit--scroll .fit__inner { padding-bottom: var(--space-4); }
+.fit.fit--scroll::-webkit-scrollbar { width: 10px; }
+.fit.fit--scroll::-webkit-scrollbar-thumb {
+  background: var(--border); border-radius: var(--radius-pill); border: 3px solid transparent;
+  background-clip: content-box;
+}
+.fit.fit--scroll::-webkit-scrollbar-thumb:hover { background: var(--meta); background-clip: content-box; }
 
 /* ---------- Page head ---------- */
 .page-head {
@@ -551,9 +560,41 @@ body { overflow: hidden; }
 /* ---------- 关于（版本 + 仓库地址） ---------- */
 .about-row { display: flex; align-items: center; gap: var(--space-5); flex-wrap: wrap; }
 .about-row__text { flex: 1 1 320px; min-width: 240px; }
-.about-row__name { font-size: var(--text-sm); font-weight: 600; margin-bottom: 2px; }
+.about-row__name { font-size: var(--text-sm); font-weight: 600; margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
 .about-row__repo { display: flex; align-items: center; gap: var(--space-2); color: var(--muted); }
 .about-row__url { font-size: var(--text-sm); color: var(--fg); user-select: all; }
+
+/* ---------- 应用内更新 ---------- */
+.update-row { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+.update-row__text { flex: 1 1 320px; min-width: 240px; }
+.update-row__actions { display: flex; gap: var(--space-2); flex: none; }
+.update-ok { color: var(--success); }
+.update-bar {
+  height: 6px; border-radius: var(--radius-pill); background: var(--surface-2);
+  overflow: hidden; margin-top: var(--space-3);
+}
+.update-bar__fill {
+  height: 100%; border-radius: var(--radius-pill); background: var(--accent);
+  transition: width 160ms linear;
+}
+/* 固定高度的说明框：内容变化不会引起整页高度跳动（FitScale 会把整页缩放） */
+.update-notes {
+  margin-top: var(--space-3);
+  height: 132px;
+  padding: var(--space-3);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  overflow-y: auto;
+}
+.update-notes__text {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  line-height: 1.7;
+  color: var(--fg-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 
 /* ---------- Inline status ---------- */
 .inline-status { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); }

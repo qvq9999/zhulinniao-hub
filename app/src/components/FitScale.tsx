@@ -4,6 +4,12 @@ interface FitScaleProps {
   children: ReactNode;
   /** 最小缩放比例（低于此值不再缩小，避免文字过小不可读） */
   min?: number;
+  /**
+   * 长页面模式：**不再为「塞进一屏」而缩小**，只用全站统一基准比例，
+   * 内容超出时改为纵向滚动。用于设置页这类条目多的页面——
+   * 否则整页被压到 0.8x 左右，字体明显小于其它页面。
+   */
+  scroll?: boolean;
 }
 
 /**
@@ -24,7 +30,7 @@ const REF_W = 1060;
  * - 比例 = min(基准比例, 本页实测所需比例)，基准比例只由窗口尺寸决定 → 各页一致；
  * - 同一页签内只减不增（lock），切换效果页签不会跳比例。
  */
-export default function FitScale({ children, min = 0.55 }: FitScaleProps) {
+export default function FitScale({ children, min = 0.55, scroll = false }: FitScaleProps) {
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   /** 本次挂载内已锁定的比例（同一页面切换页签时不再变大） */
@@ -46,6 +52,15 @@ export default function FitScale({ children, min = 0.55 }: FitScaleProps) {
 
       // 全站统一基准比例：只取决于窗口可用区，和本页内容无关
       const base = Math.min(1, availH / REF_H, availW / REF_W);
+
+      // 长页面：只按基准比例，不为了塞进一屏再缩小（改为滚动）
+      if (scroll) {
+        const final = Math.max(min, base);
+        locked.current = final;
+        i.style.zoom = String(final);
+        i.dataset.fitZoom = final.toFixed(3);
+        return;
+      }
 
       // 本页实测所需比例（从 1 倍起迭代收敛）
       let need = 1;
@@ -95,10 +110,10 @@ export default function FitScale({ children, min = 0.55 }: FitScaleProps) {
       window.removeEventListener('resize', onResize);
       if (raf) window.cancelAnimationFrame(raf);
     };
-  }, [min]);
+  }, [min, scroll]);
 
   return (
-    <div className="fit" ref={outer}>
+    <div className={`fit${scroll ? ' fit--scroll' : ''}`} ref={outer}>
       <div className="fit__inner" ref={inner}>
         {children}
       </div>

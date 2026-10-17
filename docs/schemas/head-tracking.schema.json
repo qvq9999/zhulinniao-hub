@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://zhulinniao-hub/schemas/head-tracking.schema.json",
+  "title": "HeadTracking (legacy UI/Configs/HeadTracking.json)",
+  "type": "object",
+  "required": ["DetectionTime", "FadingTime", "FWVid", "FWPid"],
+  "properties": {
+    "DetectionTime": { "type": "number" },
+    "FadingTime": { "type": "number" },
+    "YawShiftThreshold": { "type": "number" },
+    "YawPathThreshold": { "type": "number" },
+    "AutoReset": { "type": "integer" },
+    "TestSound": { "type": "string" },
+    "HotKey": { "type": "integer" },
+    "BatteryThreshold": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "FWVid": { "type": "string", "pattern": "^[0-9A-Fa-f]{4}$" },
+    "FWPid": { "type": "string", "pattern": "^[0-9A-Fa-f]{4}$" }
+  },
+  "additionalProperties": false
+}

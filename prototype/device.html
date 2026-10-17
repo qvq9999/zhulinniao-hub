@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>设备与设置 · 朱雀耳机 Hub</title>
+  <link rel="stylesheet" href="assets/design-tokens.css">
+  <link rel="stylesheet" href="assets/prototype.css">
+</head>
+<body data-page="device">
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar__brand">
+        <span class="sidebar__mark" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+        </span>
+        <div>
+          <div class="sidebar__title">朱雀耳机 Hub</div>
+          <div class="sidebar__sub">CM002X1 · 竹林鸟</div>
+        </div>
+      </div>
+      <nav class="nav" aria-label="主导航">
+        <div class="nav__label">功能</div>
+        <a class="nav-item" href="overview.html" data-nav="overview"><i data-lucide="layout-dashboard"></i><span>概览</span></a>
+        <a class="nav-item" href="sound.html" data-nav="sound"><i data-lucide="sliders-horizontal"></i><span>音效</span></a>
+        <a class="nav-item" href="spatial.html" data-nav="spatial"><i data-lucide="move-3d"></i><span>空间音频</span></a>
+        <a class="nav-item" href="mic.html" data-nav="mic"><i data-lucide="mic"></i><span>麦克风</span></a>
+        <a class="nav-item" href="hearing.html" data-nav="hearing"><i data-lucide="ear"></i><span>助听</span></a>
+        <a class="nav-item" href="lighting.html" data-nav="lighting"><i data-lucide="lightbulb"></i><span>灯光</span></a>
+        <a class="nav-item" href="device.html" data-nav="device"><i data-lucide="settings-2"></i><span>设备与设置</span></a>
+      </nav>
+      <div class="sidebar__foot">
+        <a class="nav-item" href="#feedback"><i data-lucide="message-square-text"></i><span>问题反馈</span></a>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-toggle" aria-label="展开导航" aria-expanded="false"><i data-lucide="menu"></i></button>
+        <span class="topbar__crumbs">设备与设置 · 信息与固件</span>
+        <span class="topbar__spacer"></span>
+        <a class="btn btn--secondary" href="#library"><i data-lucide="folder-cog"></i>配置库</a>
+        <button class="icon-btn" aria-label="搜索"><i data-lucide="search"></i></button>
+        <button class="icon-btn" aria-label="更多"><i data-lucide="ellipsis-vertical"></i></button>
+      </header>
+
+      <main class="canvas">
+        <div class="page-head">
+          <div class="page-head__text">
+            <h1 class="page-title">设备与设置</h1>
+            <p class="page-desc">查看设备信息、更新固件并管理全局配置。</p>
+          </div>
+        </div>
+
+        <!-- Device info -->
+        <section class="panel" style="margin-bottom:var(--space-6)">
+          <div class="info-card">
+            <div class="info-card__thumb">
+              <svg viewBox="0 0 400 400" role="img" aria-label="朱雀 CM002X1 缩略图" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M60 224C60 118 122 58 200 58s140 60 140 166"/>
+                <path d="M90 224C90 140 138 90 200 90s110 50 110 134"/>
+                <rect x="42" y="220" width="78" height="92" rx="28"/>
+                <rect x="280" y="220" width="78" height="92" rx="28"/>
+              </svg>
+            </div>
+            <dl class="info-grid" style="flex:1">
+              <div><dt>设备型号</dt><dd>朱雀 CM002X1</dd></div>
+              <div><dt>固件版本</dt><dd>v2.4.1</dd></div>
+              <div>
+                <dt>序列号</dt>
+                <dd class="copy-row">
+                  <span class="mono">ZQ2X1-0A7F-3419-CM</span>
+                  <button data-copy="ZQ2X1-0A7F-3419-CM" aria-label="复制序列号"><i data-lucide="copy"></i></button>
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+
+        <div class="work work--even">
+          <!-- Firmware -->
+          <section class="panel">
+            <div class="panel__head">
+              <h2 class="panel__title">固件升级</h2>
+              <span class="pill pill--ok"><i data-lucide="circle-check"></i>已是最新</span>
+            </div>
+            <div class="field">
+              <div class="field__row">
+                <i data-lucide="download"></i>
+                <span class="field__label">当前固件 v2.4.1</span>
+                <span class="field__val">无需升级</span>
+              </div>
+              <p class="field__hint">升级过程中请勿断开 USB 连接。进度来自真实刷写任务，不显示预估百分比。</p>
+            </div>
+            <div class="row" style="justify-content:flex-end">
+              <button class="btn btn--secondary" disabled><i data-lucide="download"></i>检查更新</button>
+            </div>
+          </section>
+
+          <!-- Jack settings -->
+          <section class="panel">
+            <div class="panel__head"><h2 class="panel__title">插孔设置</h2><i data-lucide="plug" style="width:18px;height:18px;color:var(--muted);margin-left:auto"></i></div>
+            <div class="field">
+              <div class="field__row"><span class="field__label">当前插孔模式</span></div>
+              <div class="segmented" role="group" aria-label="插孔模式">
+                <button aria-pressed="true">耳麦</button>
+                <button aria-pressed="false">耳机</button>
+                <button aria-pressed="false">麦克风输入</button>
+              </div>
+              <p class="field__hint">耳麦模式同时启用耳机输出与麦克风输入；纯耳机模式关闭麦克风通道。</p>
+            </div>
+          </section>
+
+          <!-- Auto switch -->
+          <section class="panel">
+            <div class="panel__head"><h2 class="panel__title">自动切换</h2></div>
+            <div class="field">
+              <div class="field__row">
+                <i data-lucide="refresh-cw"></i>
+                <span class="field__label">插入设备时自动切换配置档</span>
+                <label class="switch" style="margin-left:auto">
+                  <input type="checkbox" checked aria-label="自动切换开关">
+                  <span class="switch__track switch__track--accent"></span>
+                </label>
+              </div>
+              <p class="field__hint">识别到朱雀耳机接入后，自动载入上次使用的全局配置档。</p>
+            </div>
+          </section>
+
+          <!-- Config profiles -->
+          <section class="panel">
+            <div class="panel__head"><h2 class="panel__title">全局配置档</h2><button class="btn btn--ghost" style="margin-left:auto;height:32px"><i data-lucide="plus"></i>新建</button></div>
+            <div class="radio-list">
+              <label class="radio-row">
+                <input type="radio" name="profile" checked>
+                <span class="radio-row__name">办公通话</span>
+                <span class="radio-row__scene">听筒降噪 · 人声清晰</span>
+              </label>
+              <label class="radio-row">
+                <input type="radio" name="profile">
+                <span class="radio-row__name">夜间观影</span>
+                <span class="radio-row__scene">7.1 声场 · 低音增强</span>
+              </label>
+              <label class="radio-row">
+                <input type="radio" name="profile">
+                <span class="radio-row__name">沉浸游戏</span>
+                <span class="radio-row__scene">声场宽度 150% · 低延迟</span>
+              </label>
+            </div>
+          </section>
+        </div>
+
+        <!-- General settings -->
+        <section class="panel" style="margin-top:var(--space-6)">
+          <div class="panel__head"><h2 class="panel__title">通用设置</h2></div>
+          <div class="field">
+            <div class="field__row"><i data-lucide="languages"></i><span class="field__label">语言</span></div>
+            <div class="select" style="max-width:240px">
+              <select aria-label="界面语言">
+                <option>简体中文</option>
+                <option>English</option>
+              </select>
+              <i data-lucide="chevron-down"></i>
+            </div>
+          </div>
+
+          <hr class="divider">
+
+          <div class="field">
+            <div class="field__row"><i data-lucide="sun-moon"></i><span class="field__label">主题</span></div>
+            <div class="segmented" data-theme-seg role="group" aria-label="界面主题">
+              <button data-theme-val="light" aria-pressed="true">浅色</button>
+              <button data-theme-val="dark" aria-pressed="false">深色</button>
+              <button data-theme-val="system" aria-pressed="false">跟随系统</button>
+            </div>
+          </div>
+
+          <hr class="divider">
+
+          <div class="field">
+            <div class="field__row">
+              <i data-lucide="power"></i>
+              <span class="field__label">开机自启</span>
+              <label class="switch" style="margin-left:auto">
+                <input type="checkbox" aria-label="开机自启开关">
+                <span class="switch__track"></span>
+              </label>
+            </div>
+            <p class="field__hint">开机后在后台启动并自动检测朱雀耳机。</p>
+          </div>
+
+          <hr class="divider">
+
+          <div class="row">
+            <i data-lucide="info" style="width:18px;height:18px;color:var(--muted)"></i>
+            <span class="field__label">关于朱雀耳机 Hub</span>
+            <span class="topbar__spacer"></span>
+            <span class="field__hint" style="margin:0">版本 0.1.0 · 静态视觉原型</span>
+            <a class="btn btn--ghost" href="#help">帮助</a>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="toast" role="status" aria-live="polite"><i data-lucide="circle-check"></i><span>序列号已复制到剪贴板</span></div>
+
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

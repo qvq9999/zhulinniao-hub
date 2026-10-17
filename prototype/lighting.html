@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>灯光 · 朱雀耳机 Hub</title>
+  <link rel="stylesheet" href="assets/design-tokens.css">
+  <link rel="stylesheet" href="assets/prototype.css">
+</head>
+<body data-page="lighting">
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar__brand">
+        <span class="sidebar__mark" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+        </span>
+        <div>
+          <div class="sidebar__title">朱雀耳机 Hub</div>
+          <div class="sidebar__sub">CM002X1 · 竹林鸟</div>
+        </div>
+      </div>
+      <nav class="nav" aria-label="主导航">
+        <div class="nav__label">功能</div>
+        <a class="nav-item" href="overview.html" data-nav="overview"><i data-lucide="layout-dashboard"></i><span>概览</span></a>
+        <a class="nav-item" href="sound.html" data-nav="sound"><i data-lucide="sliders-horizontal"></i><span>音效</span></a>
+        <a class="nav-item" href="spatial.html" data-nav="spatial"><i data-lucide="move-3d"></i><span>空间音频</span></a>
+        <a class="nav-item" href="mic.html" data-nav="mic"><i data-lucide="mic"></i><span>麦克风</span></a>
+        <a class="nav-item" href="hearing.html" data-nav="hearing"><i data-lucide="ear"></i><span>助听</span></a>
+        <a class="nav-item" href="lighting.html" data-nav="lighting"><i data-lucide="lightbulb"></i><span>灯光</span></a>
+        <a class="nav-item" href="device.html" data-nav="device"><i data-lucide="settings-2"></i><span>设备与设置</span></a>
+      </nav>
+      <div class="sidebar__foot">
+        <a class="nav-item" href="#feedback"><i data-lucide="message-square-text"></i><span>问题反馈</span></a>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-toggle" aria-label="展开导航" aria-expanded="false"><i data-lucide="menu"></i></button>
+        <span class="topbar__crumbs">灯光 · LED 灯效</span>
+        <span class="topbar__spacer"></span>
+        <a class="btn btn--secondary" href="#library"><i data-lucide="folder-cog"></i>配置库</a>
+        <button class="icon-btn" aria-label="搜索"><i data-lucide="search"></i></button>
+        <button class="icon-btn" aria-label="更多"><i data-lucide="ellipsis-vertical"></i></button>
+      </header>
+
+      <main class="canvas">
+        <div class="page-head">
+          <div class="page-head__text">
+            <h1 class="page-title">灯光</h1>
+            <p class="page-desc">控制耳机外壳 LED 的灯效模式、亮度与颜色。</p>
+          </div>
+          <div class="page-head__actions">
+            <span class="inline-status"><i data-lucide="lightbulb"></i>全局 LED</span>
+            <label class="switch">
+              <input type="checkbox" checked data-master-led aria-label="全局 LED 开关">
+              <span class="switch__track switch__track--accent"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="work work--6-5">
+          <section class="panel">
+            <div class="panel__head">
+              <h2 class="panel__title">灯效预览</h2>
+              <span class="pill">呼吸 · 亮度 70%</span>
+            </div>
+            <div class="spatial-stage">
+              <svg viewBox="0 0 400 400" role="img" aria-label="朱雀耳机线稿，左耳罩与头梁 LED 发光点位示意" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="max-width:360px">
+                <path d="M60 224C60 118 122 58 200 58s140 60 140 166"/>
+                <path d="M90 224C90 140 138 90 200 90s110 50 110 134"/>
+                <rect x="42" y="220" width="78" height="92" rx="28"/>
+                <ellipse cx="81" cy="266" rx="21" ry="27"/>
+                <rect x="280" y="220" width="78" height="92" rx="28"/>
+                <ellipse cx="319" cy="266" rx="21" ry="27"/>
+                <!-- LED glow points -->
+                <circle cx="81" cy="226" r="5" fill="var(--led-color, var(--accent))" stroke="none"/>
+                <circle cx="319" cy="226" r="5" fill="var(--led-color, var(--accent))" stroke="none"/>
+                <circle cx="200" cy="62" r="5" fill="var(--led-color, var(--accent))" stroke="none"/>
+              </svg>
+            </div>
+            <p class="field__hint">发光点位随所选颜色与亮度实时变化。灯效颜色属个人偏好数据，不影响界面 Token。</p>
+          </section>
+
+          <section class="panel">
+            <div class="field" data-led-dependent>
+              <div class="field__row"><i data-lucide="sparkles"></i><span class="field__label">灯效模式</span></div>
+              <div class="segmented" role="group" aria-label="灯效模式">
+                <button aria-pressed="false">常亮</button>
+                <button aria-pressed="true">呼吸</button>
+                <button aria-pressed="false">流动</button>
+                <button aria-pressed="false">关</button>
+              </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field" data-led-dependent>
+              <div class="field__row">
+                <i data-lucide="sun"></i>
+                <span class="field__label">亮度</span>
+                <span class="field__val" data-slider-val>70%</span>
+              </div>
+              <div class="slider">
+                <div class="slider__track"><div class="slider__fill" style="width:70%"></div></div>
+                <input type="range" min="0" max="100" value="70" aria-label="灯光亮度">
+                <span class="slider__thumb" style="left:70%"></span>
+              </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field" data-led-dependent>
+              <div class="field__row">
+                <i data-lucide="activity"></i>
+                <span class="field__label">速度</span>
+                <span class="field__val" data-slider-val>45%</span>
+              </div>
+              <div class="slider">
+                <div class="slider__track"><div class="slider__fill" style="width:45%"></div></div>
+                <input type="range" min="0" max="100" value="45" aria-label="灯效速度">
+                <span class="slider__thumb" style="left:45%"></span>
+              </div>
+              <p class="field__hint">仅「呼吸 / 流动」模式下可用。</p>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field" data-led-dependent>
+              <div class="field__row"><i data-lucide="palette"></i><span class="field__label">颜色</span></div>
+              <div class="swatches" role="group" aria-label="灯效颜色">
+                <button class="swatch" data-led="crimson" aria-pressed="true" aria-label="朱砂红" style="background:crimson"></button>
+                <button class="swatch" data-led="orangered" aria-pressed="false" aria-label="橙红" style="background:orangered"></button>
+                <button class="swatch" data-led="orange" aria-pressed="false" aria-label="橙" style="background:orange"></button>
+                <button class="swatch" data-led="gold" aria-pressed="false" aria-label="金" style="background:gold"></button>
+                <button class="swatch" data-led="limegreen" aria-pressed="false" aria-label="青柠" style="background:limegreen"></button>
+                <button class="swatch" data-led="mediumseagreen" aria-pressed="false" aria-label="竹青" style="background:mediumseagreen"></button>
+                <button class="swatch" data-led="dodgerblue" aria-pressed="false" aria-label="蓝" style="background:dodgerblue"></button>
+                <button class="swatch" data-led="white" aria-pressed="false" aria-label="白" style="background:var(--surface)"></button>
+              </div>
+              <p class="field__hint">色板圆点 28px，选中带 1px 描边环与焦点环。</p>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

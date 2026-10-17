@@ -1,0 +1,126 @@
+{
+  "$schema": "https://design-tokens.org/schema",
+  "meta": {
+    "name": "Zhuque Headphone Hub",
+    "brand": "竹林鸟 Zhuque (CM002X1)",
+    "direction": "Candidate B — Bamboo Grove Brand",
+    "register": "product",
+    "platform": "web + tauri-desktop",
+    "iconLibrary": "lucide",
+    "iconStroke": 1.5,
+    "grid": "4px"
+  },
+  "color": {
+    "identity": {
+      "bg":        { "value": "#F6F7F8", "type": "color", "role": "page background" },
+      "surface":   { "value": "#FFFFFF", "type": "color", "role": "card / container" },
+      "surface-2": { "value": "#EEF0F2", "type": "color", "role": "recessed surface / track" },
+      "fg":        { "value": "#1A1D1F", "type": "color", "role": "primary text" },
+      "fg-2":      { "value": "#4A5054", "type": "color", "role": "secondary text" },
+      "muted":     { "value": "#767C82", "type": "color", "role": "captions / labels" },
+      "meta":      { "value": "#9AA0A6", "type": "color", "role": "metadata / disabled text" },
+      "border":    { "value": "#E2E5E8", "type": "color", "role": "default border" },
+      "border-soft": { "value": "#EDEFF1", "type": "color", "role": "internal divider" },
+      "accent":    { "value": "#C33B2E", "type": "color", "role": "Zhuque cinnabar red — brand accent (<=2 visible per screen)" },
+      "accent-2":  { "value": "#3F7A5A", "type": "color", "role": "Bamboo green — secondary / positive signal" }
+    },
+    "accent-derivatives": {
+      "accent-on":     { "value": "#FFFFFF", "type": "color" },
+      "accent-hover":  { "value": "#AF3327", "type": "color" },
+      "accent-active": { "value": "#982C22", "type": "color" },
+      "accent-soft":   { "value": "#FBE9E7", "type": "color" },
+      "accent-ring":   { "value": "rgba(195, 59, 46, 0.32)", "type": "color" },
+      "accent-2-soft": { "value": "#E7F0EA", "type": "color" }
+    },
+    "semantic": {
+      "success": { "value": "#2E7D4F", "type": "color" },
+      "warn":    { "value": "#C98A16", "type": "color" },
+      "danger":  { "value": "#B4322A", "type": "color" },
+      "info":    { "value": "#3F7A5A", "type": "color" }
+    }
+  },
+  "theme": {
+    "dark": {
+      "bg":        { "value": "#141617", "type": "color" },
+      "surface":   { "value": "#1D2022", "type": "color" },
+      "surface-2": { "value": "#262A2C", "type": "color" },
+      "fg":        { "value": "#F3F4F5", "type": "color" },
+      "fg-2":      { "value": "#C6CBCF", "type": "color" },
+      "muted":     { "value": "#8C9296", "type": "color" },
+      "meta":      { "value": "#63696D", "type": "color" },
+      "border":    { "value": "rgba(255,255,255,0.10)", "type": "color" },
+      "border-soft": { "value": "rgba(255,255,255,0.06)", "type": "color" },
+      "accent":    { "value": "#D9544A", "type": "color" },
+      "accent-2":  { "value": "#4F9068", "type": "color" }
+    }
+  },
+  "font": {
+    "family": {
+      "display": { "value": "Inter, 'Noto Sans SC', -apple-system, 'Segoe UI', sans-serif", "type": "fontFamily" },
+      "body":    { "value": "Inter, 'Noto Sans SC', -apple-system, 'Segoe UI', sans-serif", "type": "fontFamily" },
+      "mono":    { "value": "'JetBrains Mono', 'Fira Code', ui-monospace, monospace", "type": "fontFamily" }
+    },
+    "weight": {
+      "read":      { "value": 400, "type": "fontWeight" },
+      "emphasize": { "value": 500, "type": "fontWeight" },
+      "announce":  { "value": 600, "type": "fontWeight" }
+    },
+    "size": {
+      "xs":   { "value": "0.75rem",  "type": "dimension" },
+      "sm":   { "value": "0.875rem", "type": "dimension" },
+      "base": { "value": "1rem",     "type": "dimension" },
+      "lg":   { "value": "1.125rem", "type": "dimension" },
+      "xl":   { "value": "1.25rem",  "type": "dimension" },
+      "2xl":  { "value": "1.5rem",   "type": "dimension" },
+      "3xl":  { "value": "2rem",     "type": "dimension" },
+      "4xl":  { "value": "2.5rem",   "type": "dimension" }
+    },
+    "leading": {
+      "tight": { "value": 1.2, "type": "number" },
+      "body":  { "value": 1.6, "type": "number" }
+    },
+    "tracking": {
+      "display": { "value": "-0.02em", "type": "dimension" },
+      "caps":    { "value": "0.08em",  "type": "dimension" },
+      "body":    { "value": "0",       "type": "dimension" }
+    }
+  },
+  "space": {
+    "1":  { "value": "4px",  "type": "dimension" },
+    "2":  { "value": "8px",  "type": "dimension" },
+    "3":  { "value": "12px", "type": "dimension" },
+    "4":  { "value": "16px", "type": "dimension" },
+    "5":  { "value": "20px", "type": "dimension" },
+    "6":  { "value": "24px", "type": "dimension" },
+    "8":  { "value": "32px", "type": "dimension" },
+    "10": { "value": "40px", "type": "dimension" },
+    "12": { "value": "48px", "type": "dimension" }
+  },
+  "radius": {
+    "sm":   { "value": "8px",    "type": "dimension" },
+    "md":   { "value": "12px",   "type": "dimension" },
+    "lg":   { "value": "16px",   "type": "dimension" },
+    "pill": { "value": "9999px", "type": "dimension" }
+  },
+  "shadow": {
+    "flat":   { "value": "none", "type": "boxShadow" },
+    "ring":   { "value": "0 0 0 1px #E2E5E8", "type": "boxShadow" },
+    "raised": { "value": "0 1px 2px rgba(16,24,40,0.04), 0 4px 12px rgba(16,24,40,0.06)", "type": "boxShadow" }
+  },
+  "border": {
+    "width": { "value": "1px", "type": "dimension" },
+    "color": { "value": "#E2E5E8", "type": "color" }
+  },
+  "motion": {
+    "fast":  { "value": "120ms", "type": "duration" },
+    "base":  { "value": "180ms", "type": "duration" },
+    "slow":  { "value": "240ms", "type": "duration" },
+    "ease":  { "value": "cubic-bezier(0.2, 0, 0, 1)", "type": "cubicBezier" }
+  },
+  "layout": {
+    "sidebar-width": { "value": "220px", "type": "dimension" },
+    "topbar-height": { "value": "56px",  "type": "dimension" },
+    "container-max": { "value": "1120px", "type": "dimension" },
+    "section-y":     { "value": "48px", "type": "dimension" }
+  }
+}

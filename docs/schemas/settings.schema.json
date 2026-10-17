@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://zhulinniao-hub/schemas/settings.schema.json",
+  "title": "Settings (legacy UI/Configs/Settings.json)",
+  "type": "object",
+  "properties": {
+    "DisableMainGuide": { "type": "integer", "enum": [0, 1] },
+    "HideAppWhenNoDeviceDetected": { "type": "integer", "enum": [0, 1] },
+    "LEDControlDevice_VID": { "type": "string", "pattern": "^[0-9A-Fa-f]{4}$" },
+    "JokkooControlDevice_VID": { "type": "string", "pattern": "^[0-9A-Fa-f]{4}$" },
+    "GaieochosControlDevice_VID": { "type": "string", "pattern": "^[0-9A-Fa-f]{4}$" },
+    "TekeaControlDevice_VID": { "type": "string", "pattern": "^[0-9A-Fa-f]{4}$" }
+  },
+  "additionalProperties": false
+}

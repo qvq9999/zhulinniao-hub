@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://zhulinniao-hub/schemas/hyperhear-default-setting.schema.json",
+  "title": "HyperHearDefaultSetting (legacy UI/Configs/HyperHearDefaultSetting.json)",
+  "type": "object",
+  "required": ["Enable", "SelectedGameName", "GameSettings"],
+  "properties": {
+    "Enable": { "type": "boolean" },
+    "SelectedGameName": { "type": "string" },
+    "GameSettings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Name", "Explosion", "SelfStep", "ExtStep", "Ambient"],
+        "properties": {
+          "Name": { "type": "string" },
+          "Explosion": { "type": "number" },
+          "SelfStep": { "type": "number" },
+          "ExtStep": { "type": "number" },
+          "Ambient": { "type": "number" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "竹林鸟朱雀 Hub",
+  "version": "0.1.0",
+  "identifier": "com.zhulinniao.hub",
+  "build": {
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "竹林鸟朱雀 Hub",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "center": true,
+        "additionalBrowserArgs": "--disable-features=msWebView2EnableDraggableRegions --no-sandbox --remote-debugging-port=9222 --remote-allow-origins=*"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": false,
+    "targets": "all",
+    "icon": []
+  }
+}

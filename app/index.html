@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>竹林鸟朱雀 Hub</title>
+    <style>
+      /* 启动期兜底错误面：任何脚本/渲染异常都会显现具体原因，不再白屏黑屏 */
+      #boot-error {
+        display: none;
+        margin: 48px auto;
+        max-width: 760px;
+        padding: 20px 24px;
+        border: 1px solid #B4322A;
+        border-radius: 12px;
+        background: #fff;
+        color: #1A1D1F;
+        font: 14px/1.6 system-ui, "Noto Sans SC", sans-serif;
+      }
+      #boot-error h2 { margin: 0 0 8px; font-size: 16px; color: #B4322A; }
+      #boot-error pre {
+        white-space: pre-wrap; word-break: break-all; margin: 12px 0 0;
+        padding: 12px; background: #F6F7F8; border-radius: 8px;
+        font: 12px/1.5 ui-monospace, monospace; color: #4A5054;
+      }
+    </style>
+    <script>
+      // 启动期错误捕获 + 磁盘上报（Tauri 环境）；任何异常都会显现具体原因，不再白屏黑屏
+      (function () {
+        function report(msg) {
+          try {
+            var inv = window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke;
+            if (inv) inv('report_frontend_error', { message: msg });
+          } catch (e) { /* 浏览器预览环境无 Tauri，忽略 */ }
+        }
+        window.__reportBoot = report;
+        report('html-loaded | ua=' + navigator.userAgent.slice(0, 80));
+
+        function show(kind, detail) {
+          report(kind + ' | ' + detail);
+          var box = document.getElementById('boot-error');
+          if (!box) {
+            box = document.createElement('div');
+            box.id = 'boot-error';
+            (document.body || document.documentElement).appendChild(box);
+          }
+          box.style.display = 'block';
+          var pre = box.querySelector('pre') || box.appendChild(document.createElement('pre'));
+          pre.textContent += '[' + kind + '] ' + detail + '\n';
+        }
+        window.addEventListener('error', function (e) {
+          var t = e.target;
+          if (t && (t.tagName === 'SCRIPT' || t.tagName === 'LINK')) {
+            show('资源加载失败', (t.tagName === 'SCRIPT' ? t.src : t.href) || '(未知)');
+          } else {
+            show('运行时错误', (e.message || '') + (e.filename ? ' @ ' + e.filename + ':' + e.lineno : ''));
+          }
+        }, true);
+        window.addEventListener('unhandledrejection', function (e) {
+          show('未处理的 Promise 拒绝', String((e.reason && (e.reason.stack || e.reason.message)) || e.reason));
+        });
+        // 渲染兜底：4 秒后 #root 仍然为空 → 说明 React 没挂载成功
+        window.setTimeout(function () {
+          var root = document.getElementById('root');
+          if (root && root.childElementCount === 0) {
+            show('渲染超时', '#root 为空：React 未挂载');
+          }
+        }, 4000);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="boot-error"></div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,205 @@
+/* ============================================================
+   Zhuque Headphone Hub — Design Tokens
+   Brand: 竹林鸟 朱雀 CM002X1 · Direction: Candidate B (Bamboo Grove)
+   Register: product · Platform: web + Tauri desktop
+   Icon: Lucide (1.5px stroke, 16/20/24px) · Grid: 4px
+   四层 Token 架构：A1-identity / A1-structure / A2 / B-slot / C-extension
+   规则：全项目颜色必须引用 Token，禁止组件内裸 hex（#fff/#000 除外）
+   ============================================================ */
+
+:root {
+  /* ---- A1-identity · Surface ---- */
+  --bg: #F6F7F8;
+  --surface: #FFFFFF;
+  --fg: #1A1D1F;
+  --muted: #767C82;
+  --border: #E2E5E8;
+
+  /* ---- A1-identity · Accent (Zhuque cinnabar red) ---- */
+  --accent: #C33B2E;
+  --accent-2: #3F7A5A; /* Bamboo green — secondary/positive */
+
+  /* ---- A1-identity · Typography ---- */
+  --font-display: "Inter", "Noto Sans SC", -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Inter", "Noto Sans SC", -apple-system, "Segoe UI", sans-serif;
+
+  /* ---- A1-structure · Type scale (8 级) ---- */
+  --text-xs: 0.75rem;    /* 12px */
+  --text-sm: 0.875rem;   /* 14px */
+  --text-base: 1rem;     /* 16px */
+  --text-lg: 1.125rem;   /* 18px */
+  --text-xl: 1.25rem;    /* 20px */
+  --text-2xl: 1.5rem;    /* 24px */
+  --text-3xl: 2rem;      /* 32px */
+  --text-4xl: 2.5rem;    /* 40px */
+  --leading-tight: 1.2;
+  --leading-body: 1.6;
+  --tracking-display: -0.02em;
+  --tracking-caps: 0.08em;
+
+  /* ---- A1-structure · Layout ---- */
+  --sidebar-width: 220px;
+  --topbar-height: 56px;
+  --container-max: 1120px;
+  --section-y: 48px;
+
+  /* ---- A2 · Accent derivatives ---- */
+  --accent-on: #FFFFFF;
+  --accent-hover: #AF3327;
+  --accent-active: #982C22;
+  --accent-soft: #FBE9E7;
+  --accent-ring: rgba(195, 59, 46, 0.32);
+  --accent-2-soft: #E7F0EA;
+
+  /* ---- A2 · Semantic ---- */
+  --success: #2E7D4F;
+  --warn: #C98A16;
+  --danger: #B4322A;
+  --info: #3F7A5A;
+
+  /* ---- A2 · Spacing (4px 网格) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---- A2 · Radius ---- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+
+  /* ---- A2 · Elevation (三级) ---- */
+  --elev-flat: none;
+  --elev-ring: 0 0 0 1px var(--border);
+  --elev-raised: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06);
+
+  /* ---- A2 · Mono ---- */
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+
+  /* ---- A2 · Motion ---- */
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ---- Focus ---- */
+  --focus-ring: 0 0 0 3px var(--accent-ring);
+
+  /* ---- B-slot (别名) ---- */
+  --surface-2: #EEF0F2;      /* recessed / slider track */
+  --fg-2: #4A5054;           /* secondary text */
+  --meta: #9AA0A6;           /* metadata / disabled text */
+  --border-soft: #EDEFF1;    /* internal divider */
+
+  /* ---- C-extension (品牌专属) ---- */
+  --equ-mid: #C33B2E;        /* 频响中轴参考线 */
+  --equ-grid: #E2E5E8;       /* 频响网格线 */
+  --hotspot-line: rgba(195, 59, 46, 0.45); /* 热区引线 */
+  --hotspot-halo: rgba(195, 59, 46, 0.18); /* 热区光晕 */
+  --device-muted-filter: grayscale(0.72) brightness(0.98) opacity(0.72);
+}
+
+/* ===== 深色主题：亮度递进表达层级，非阴影 ===== */
+:root[data-theme="dark"] {
+  --bg: #141617;
+  --surface: #1D2022;
+  --fg: #F3F4F5;
+  --muted: #8C9296;
+  --border: rgba(255, 255, 255, 0.10);
+
+  --accent: #D9544A;
+  --accent-2: #4F9068;
+
+  --accent-on: #FFFFFF;
+  --accent-hover: #E06A60;
+  --accent-active: #C24A41;
+  --accent-soft: rgba(217, 84, 74, 0.14);
+  --accent-ring: rgba(217, 84, 74, 0.40);
+  --accent-2-soft: rgba(79, 144, 104, 0.16);
+
+  --success: #4FAE72;
+  --warn: #D9A441;
+  --danger: #E06A60;
+  --info: #4F9068;
+
+  --elev-flat: none;
+  --elev-ring: 0 0 0 1px var(--border);
+  --elev-raised: 0 2px 4px rgba(0, 0, 0, 0.32), 0 8px 24px rgba(0, 0, 0, 0.36);
+
+  --surface-2: #262A2C;
+  --fg-2: #C6CBCF;
+  --meta: #63696D;
+  --border-soft: rgba(255, 255, 255, 0.06);
+
+  --equ-mid: #D9544A;
+  --equ-grid: rgba(255, 255, 255, 0.10);
+  --hotspot-line: rgba(217, 84, 74, 0.50);
+  --hotspot-halo: rgba(217, 84, 74, 0.20);
+  --device-muted-filter: grayscale(0.72) brightness(0.72) opacity(0.78);
+}
+
+/* ===== 基础原子样式（供前端直接复用） ===== */
+html { color-scheme: light dark; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Base atoms */
+.btn {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  height: 40px; padding: 0 var(--space-4);
+  font-family: var(--font-body); font-size: var(--text-sm);
+  font-weight: 500; letter-spacing: var(--tracking-caps);
+  border-radius: var(--radius-sm); border: 1px solid transparent;
+  cursor: pointer; transition: background var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+.btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.btn--primary { background: var(--accent); color: var(--accent-on); }
+.btn--primary:hover { background: var(--accent-hover); }
+.btn--primary:active { background: var(--accent-active); }
+.btn--secondary { background: transparent; color: var(--accent); border-color: var(--border); }
+.btn--secondary:hover { border-color: var(--accent); }
+.btn--ghost { background: transparent; color: var(--fg); }
+.btn--ghost:hover { background: var(--surface-2); }
+.btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: var(--space-5);
+  transition: border-color var(--motion-fast) var(--ease-standard);
+}
+.card:hover { border-color: var(--accent); }
+
+.input {
+  height: 40px; width: 100%; padding: 0 var(--space-3);
+  background: var(--surface); color: var(--fg);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-family: var(--font-body); font-size: var(--text-sm);
+}
+.input:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+.input[aria-invalid="true"] { border-color: var(--danger); }
+
+/* 等宽数值 */
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* 动效降级 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

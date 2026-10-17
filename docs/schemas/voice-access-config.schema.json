@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://zhulinniao-hub/schemas/voice-access-config.schema.json",
+  "title": "VoiceAccessConfig (legacy UI/Configs/VoiceAccessConfig.json)",
+  "type": "object",
+  "required": ["ServerPath", "Tip_sound"],
+  "properties": {
+    "ServerPath": { "type": "string" },
+    "Tip_sound": { "type": "string" }
+  },
+  "additionalProperties": false
+}

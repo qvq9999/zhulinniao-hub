@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>麦克风 · 朱雀耳机 Hub</title>
+  <link rel="stylesheet" href="assets/design-tokens.css">
+  <link rel="stylesheet" href="assets/prototype.css">
+</head>
+<body data-page="mic">
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar__brand">
+        <span class="sidebar__mark" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+        </span>
+        <div>
+          <div class="sidebar__title">朱雀耳机 Hub</div>
+          <div class="sidebar__sub">CM002X1 · 竹林鸟</div>
+        </div>
+      </div>
+      <nav class="nav" aria-label="主导航">
+        <div class="nav__label">功能</div>
+        <a class="nav-item" href="overview.html" data-nav="overview"><i data-lucide="layout-dashboard"></i><span>概览</span></a>
+        <a class="nav-item" href="sound.html" data-nav="sound"><i data-lucide="sliders-horizontal"></i><span>音效</span></a>
+        <a class="nav-item" href="spatial.html" data-nav="spatial"><i data-lucide="move-3d"></i><span>空间音频</span></a>
+        <a class="nav-item" href="mic.html" data-nav="mic"><i data-lucide="mic"></i><span>麦克风</span></a>
+        <a class="nav-item" href="hearing.html" data-nav="hearing"><i data-lucide="ear"></i><span>助听</span></a>
+        <a class="nav-item" href="lighting.html" data-nav="lighting"><i data-lucide="lightbulb"></i><span>灯光</span></a>
+        <a class="nav-item" href="device.html" data-nav="device"><i data-lucide="settings-2"></i><span>设备与设置</span></a>
+      </nav>
+      <div class="sidebar__foot">
+        <a class="nav-item" href="#feedback"><i data-lucide="message-square-text"></i><span>问题反馈</span></a>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-toggle" aria-label="展开导航" aria-expanded="false"><i data-lucide="menu"></i></button>
+        <span class="topbar__crumbs">麦克风 · 降噪与试听</span>
+        <span class="topbar__spacer"></span>
+        <a class="btn btn--secondary" href="#library"><i data-lucide="folder-cog"></i>配置库</a>
+        <button class="icon-btn" aria-label="搜索"><i data-lucide="search"></i></button>
+        <button class="icon-btn" aria-label="更多"><i data-lucide="ellipsis-vertical"></i></button>
+      </header>
+
+      <main class="canvas">
+        <div class="page-head">
+          <div class="page-head__text">
+            <h1 class="page-title">麦克风</h1>
+            <p class="page-desc">通话拾音、降噪处理与变声预设。</p>
+          </div>
+          <div class="page-head__actions">
+            <div class="meter" aria-label="实时输入电平">
+              <span class="meter__bar" style="height:24%"></span>
+              <span class="meter__bar" style="height:44%"></span>
+              <span class="meter__bar" style="height:68%"></span>
+              <span class="meter__bar" style="height:52%"></span>
+              <span class="meter__bar meter__bar--warn" style="height:84%"></span>
+              <span class="meter__bar" style="height:30%"></span>
+            </div>
+            <span class="meter__val mono">-12.4 dBFS</span>
+          </div>
+        </div>
+
+        <div class="work work--even">
+          <section class="panel">
+            <div class="panel__head">
+              <h2 class="panel__title">麦克风均衡</h2>
+              <div class="select" style="width:160px;margin-left:auto">
+                <select aria-label="麦克风均衡预置">
+                  <option>语音清晰</option>
+                  <option>平坦</option>
+                  <option>低切</option>
+                  <option>自定义</option>
+                </select>
+                <i data-lucide="chevron-down"></i>
+              </div>
+            </div>
+            <div class="eq" data-eq data-freqs="63,250,1000,4000,12000" data-band-labels="63Hz,250Hz,1kHz,4kHz,12kHz" data-gains="0,-2,0,2,3">
+              <svg viewBox="0 0 640 240" role="group" aria-label="5 段麦克风均衡曲线">
+                <g class="eq__grid-group"></g>
+                <line class="eq__axis" x1="40" y1="116" x2="620" y2="116"></line>
+                <polyline class="eq__curve eq__curve--accent2" points=""></polyline>
+                <g class="eq__nodes"></g>
+                <g class="eq__labels"></g>
+              </svg>
+              <p class="eq__readout" data-eq-readout>正在读取曲线…</p>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="field">
+              <div class="field__row">
+                <i data-lucide="audio-waveform"></i>
+                <span class="field__label">降噪</span>
+                <label class="switch" style="margin-left:auto">
+                  <input type="checkbox" aria-label="降噪开关">
+                  <span class="switch__track"></span>
+                </label>
+              </div>
+              <div class="field__row" style="margin-bottom:var(--space-2)">
+                <span class="field__label muted" style="font-weight:400">降噪强度</span>
+                <span class="field__val" data-slider-val>40%</span>
+              </div>
+              <div class="slider is-disabled">
+                <div class="slider__track"><div class="slider__fill" style="width:40%"></div></div>
+                <input type="range" min="0" max="100" value="40" disabled aria-label="降噪强度">
+                <span class="slider__thumb" style="left:40%"></span>
+              </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+              <div class="field__row">
+                <i data-lucide="sparkles"></i>
+                <span class="field__label">AI 降噪</span>
+                <label class="switch" style="margin-left:auto">
+                  <input type="checkbox" checked aria-label="AI 降噪开关">
+                  <span class="switch__track switch__track--accent"></span>
+                </label>
+              </div>
+              <p class="field__hint">已由 AI 降噪接管，普通降噪暂不可调。AI 降噪对键盘声、风扇声与人声分离更彻底。</p>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+              <div class="field__row"><i data-lucide="wand-2"></i><span class="field__label">魔音变声</span></div>
+              <div class="select">
+                <select aria-label="魔音变声预设">
+                  <option>原声</option>
+                  <option>低沉</option>
+                  <option>明亮</option>
+                  <option>机器人</option>
+                  <option>儿童</option>
+                </select>
+                <i data-lucide="chevron-down"></i>
+              </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+              <div class="field__row"><i data-lucide="mic-vocal"></i><span class="field__label">录音音效</span></div>
+              <div class="segmented" role="group" aria-label="录音音效">
+                <button aria-pressed="true">干声</button>
+                <button aria-pressed="false">直播</button>
+                <button aria-pressed="false">录音棚</button>
+                <button aria-pressed="false">K歌</button>
+              </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+              <div class="field__row">
+                <i data-lucide="messages-square"></i>
+                <span class="field__label">语音透传</span>
+                <label class="switch" style="margin-left:auto">
+                  <input type="checkbox" aria-label="语音透传开关">
+                  <span class="switch__track"></span>
+                </label>
+              </div>
+              <p class="field__hint">游戏语音时自动压低背景音量并增强队友人声，通话清晰不打断对局。</p>
+            </div>
+          </section>
+        </div>
+
+        <hr class="divider">
+        <div class="row" style="justify-content:space-between">
+          <label class="switch">
+            <input type="checkbox" checked aria-label="实时监听开关">
+            <span class="switch__track switch__track--accent"></span>
+          </label>
+          <span class="inline-status"><i data-lucide="headphones"></i>实时监听：在耳机中直接试听麦克风拾音</span>
+          <span class="topbar__spacer"></span>
+          <span class="field__hint" style="margin:0">建议先戴好耳机再开启，避免啸叫。</span>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

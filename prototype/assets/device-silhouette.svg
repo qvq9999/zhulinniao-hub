@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="朱雀 CM002X1 头戴式耳机线稿占位图">
+  <!-- headband -->
+  <path d="M60 224C60 118 122 58 200 58s140 60 140 166"/>
+  <path d="M90 224C90 140 138 90 200 90s110 50 110 134"/>
+  <!-- left ear cup -->
+  <rect x="42" y="220" width="78" height="92" rx="28"/>
+  <ellipse cx="81" cy="266" rx="21" ry="27"/>
+  <!-- right ear cup -->
+  <rect x="280" y="220" width="78" height="92" rx="28"/>
+  <ellipse cx="319" cy="266" rx="21" ry="27"/>
+  <!-- detachable microphone boom -->
+  <path d="M84 312c-4 34 18 50 52 50"/>
+  <rect x="132" y="354" width="26" height="16" rx="8"/>
+  <!-- LED indicator on left cup -->
+  <circle cx="81" cy="232" r="3"/>
+</svg>

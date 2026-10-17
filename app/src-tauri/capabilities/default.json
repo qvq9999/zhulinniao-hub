@@ -1,0 +1,7 @@
+{
+  "$schema": "gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "主窗口默认权限：核心能力 + 自定义命令。自定义命令在 Tauri v2 中默认允许主窗口调用。",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

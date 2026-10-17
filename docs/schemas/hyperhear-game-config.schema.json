@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://zhulinniao-hub/schemas/hyperhear-game-config.schema.json",
+  "title": "HyperHearGameConfig (legacy UI/Configs/HyperHearGameConfig.json)",
+  "type": "object",
+  "required": ["GameList"],
+  "properties": {
+    "GameList": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Name", "ProcessName", "ProcessPath", "Target", "IsEnabled"],
+        "properties": {
+          "Name": { "type": "string" },
+          "ProcessName": { "type": "string" },
+          "ProcessPath": { "type": "string" },
+          "Target": { "type": "string" },
+          "IsEnabled": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

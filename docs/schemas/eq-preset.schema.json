@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://zhulinniao-hub/schemas/eq-preset.schema.json",
+  "title": "EQPreset (legacy UI/Configs/EQPreset.json)",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["Index", "EQValues"],
+    "properties": {
+      "Index": { "type": "integer", "minimum": 0 },
+      "EQValues": {
+        "type": "array",
+        "minItems": 10,
+        "maxItems": 10,
+        "items": { "type": "integer", "minimum": -20, "maximum": 20 }
+      }
+    },
+    "additionalProperties": false
+  }
+}

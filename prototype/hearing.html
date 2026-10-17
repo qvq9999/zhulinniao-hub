@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>助听 · 朱雀耳机 Hub</title>
+  <link rel="stylesheet" href="assets/design-tokens.css">
+  <link rel="stylesheet" href="assets/prototype.css">
+</head>
+<body data-page="hearing">
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar__brand">
+        <span class="sidebar__mark" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+        </span>
+        <div>
+          <div class="sidebar__title">朱雀耳机 Hub</div>
+          <div class="sidebar__sub">CM002X1 · 竹林鸟</div>
+        </div>
+      </div>
+      <nav class="nav" aria-label="主导航">
+        <div class="nav__label">功能</div>
+        <a class="nav-item" href="overview.html" data-nav="overview"><i data-lucide="layout-dashboard"></i><span>概览</span></a>
+        <a class="nav-item" href="sound.html" data-nav="sound"><i data-lucide="sliders-horizontal"></i><span>音效</span></a>
+        <a class="nav-item" href="spatial.html" data-nav="spatial"><i data-lucide="move-3d"></i><span>空间音频</span></a>
+        <a class="nav-item" href="mic.html" data-nav="mic"><i data-lucide="mic"></i><span>麦克风</span></a>
+        <a class="nav-item" href="hearing.html" data-nav="hearing"><i data-lucide="ear"></i><span>助听</span></a>
+        <a class="nav-item" href="lighting.html" data-nav="lighting"><i data-lucide="lightbulb"></i><span>灯光</span></a>
+        <a class="nav-item" href="device.html" data-nav="device"><i data-lucide="settings-2"></i><span>设备与设置</span></a>
+      </nav>
+      <div class="sidebar__foot">
+        <a class="nav-item" href="#feedback"><i data-lucide="message-square-text"></i><span>问题反馈</span></a>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-toggle" aria-label="展开导航" aria-expanded="false"><i data-lucide="menu"></i></button>
+        <span class="topbar__crumbs">助听 · HyperHear 增强听力</span>
+        <span class="topbar__spacer"></span>
+        <a class="btn btn--secondary" href="#library"><i data-lucide="folder-cog"></i>配置库</a>
+        <button class="icon-btn" aria-label="搜索"><i data-lucide="search"></i></button>
+        <button class="icon-btn" aria-label="更多"><i data-lucide="ellipsis-vertical"></i></button>
+      </header>
+
+      <main class="canvas">
+        <div class="page-head">
+          <div class="page-head__text">
+            <h1 class="page-title">助听</h1>
+            <p class="page-desc">按试听反馈做频率补偿，让对话与人声更清楚。</p>
+          </div>
+          <div class="page-head__actions">
+            <button class="btn btn--primary"><i data-lucide="ear"></i>开始校准</button>
+          </div>
+        </div>
+
+        <div class="inline-status inline-status--warn" style="margin-bottom:var(--space-5)">
+          <i data-lucide="triangle-alert"></i>尚未完成校准，当前使用通用补偿曲线
+        </div>
+
+        <div class="work work--6-5">
+          <section class="panel">
+            <div class="panel__head">
+              <h2 class="panel__title">听力补偿曲线</h2>
+              <span class="pill">125Hz – 8kHz</span>
+            </div>
+            <div class="eq" data-eq data-freqs="125,250,500,1000,2000,4000,8000" data-band-labels="125Hz,250Hz,500Hz,1kHz,2kHz,4kHz,8kHz" data-gains="2,3,4,5,4,2,1">
+              <svg viewBox="0 0 640 240" role="group" aria-label="频率增益补偿曲线">
+                <g class="eq__grid-group"></g>
+                <line class="eq__axis" x1="40" y1="116" x2="620" y2="116"></line>
+                <polyline class="eq__curve eq__curve--accent2" points=""></polyline>
+                <g class="eq__nodes"></g>
+                <g class="eq__labels"></g>
+              </svg>
+              <p class="eq__readout" data-eq-readout>正在读取曲线…</p>
+            </div>
+            <p class="field__hint">纵轴为各频段增益（dB），曲线走竹青正向色，表示对较弱频段的提升。</p>
+          </section>
+
+          <section class="panel">
+            <div class="field">
+              <div class="field__row">
+                <i data-lucide="gauge"></i>
+                <span class="field__label">补偿强度</span>
+                <span class="field__val" data-slider-val>55%</span>
+              </div>
+              <div class="slider">
+                <div class="slider__track"><div class="slider__fill" style="width:55%"></div></div>
+                <input type="range" min="0" max="100" value="55" aria-label="补偿强度">
+                <span class="slider__thumb" style="left:55%"></span>
+              </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+              <div class="field__row"><i data-lucide="layout-grid"></i><span class="field__label">使用场景</span></div>
+              <div class="segmented" role="group" aria-label="使用场景">
+                <button aria-pressed="true">通用</button>
+                <button aria-pressed="false">交谈</button>
+                <button aria-pressed="false">电视</button>
+                <button aria-pressed="false">户外</button>
+              </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+              <div class="field__row">
+                <i data-lucide="split"></i>
+                <span class="field__label">左右耳独立</span>
+                <label class="switch" style="margin-left:auto">
+                  <input type="checkbox" aria-label="左右耳独立开关">
+                  <span class="switch__track"></span>
+                </label>
+              </div>
+              <p class="field__hint">开启后左右耳分别绘制补偿曲线，适合单侧听力差异。</p>
+            </div>
+
+            <hr class="divider">
+
+            <div class="inline-status inline-status--warn"><i data-lucide="info"></i>校准会分步引导试听，根据你的反馈调整，不替代医学诊疗。</div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://zhulinniao-hub/schemas/led-default-config.schema.json",
+  "title": "LEDDefaultConfig (legacy UI/Configs/LEDDefaultConfig.json)",
+  "type": "object",
+  "required": ["VID", "PID", "Enable", "Mode", "DwellTime", "Color1"],
+  "properties": {
+    "VID": { "type": "integer" },
+    "PID": { "type": "integer" },
+    "Enable": { "type": "integer", "enum": [0, 1] },
+    "Mode": { "type": "integer", "minimum": 0 },
+    "DwellTime": { "type": "integer", "minimum": 0 },
+    "Color1": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }
+  },
+  "additionalProperties": false
+}

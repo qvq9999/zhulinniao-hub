@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>音效 · 朱雀耳机 Hub</title>
+  <link rel="stylesheet" href="assets/design-tokens.css">
+  <link rel="stylesheet" href="assets/prototype.css">
+</head>
+<body data-page="sound">
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar__brand">
+        <span class="sidebar__mark" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+        </span>
+        <div>
+          <div class="sidebar__title">朱雀耳机 Hub</div>
+          <div class="sidebar__sub">CM002X1 · 竹林鸟</div>
+        </div>
+      </div>
+      <nav class="nav" aria-label="主导航">
+        <div class="nav__label">功能</div>
+        <a class="nav-item" href="overview.html" data-nav="overview"><i data-lucide="layout-dashboard"></i><span>概览</span></a>
+        <a class="nav-item" href="sound.html" data-nav="sound"><i data-lucide="sliders-horizontal"></i><span>音效</span></a>
+        <a class="nav-item" href="spatial.html" data-nav="spatial"><i data-lucide="move-3d"></i><span>空间音频</span></a>
+        <a class="nav-item" href="mic.html" data-nav="mic"><i data-lucide="mic"></i><span>麦克风</span></a>
+        <a class="nav-item" href="hearing.html" data-nav="hearing"><i data-lucide="ear"></i><span>助听</span></a>
+        <a class="nav-item" href="lighting.html" data-nav="lighting"><i data-lucide="lightbulb"></i><span>灯光</span></a>
+        <a class="nav-item" href="device.html" data-nav="device"><i data-lucide="settings-2"></i><span>设备与设置</span></a>
+      </nav>
+      <div class="sidebar__foot">
+        <a class="nav-item" href="#feedback"><i data-lucide="message-square-text"></i><span>问题反馈</span></a>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-toggle" aria-label="展开导航" aria-expanded="false"><i data-lucide="menu"></i></button>
+        <span class="topbar__crumbs">音效 · 均衡与低音</span>
+        <span class="topbar__spacer"></span>
+        <a class="btn btn--secondary" href="#library"><i data-lucide="folder-cog"></i>配置库</a>
+        <button class="icon-btn" aria-label="搜索"><i data-lucide="search"></i></button>
+        <button class="icon-btn" aria-label="更多"><i data-lucide="ellipsis-vertical"></i></button>
+      </header>
+
+      <main class="canvas">
+        <div class="page-head">
+          <div class="page-head__text">
+            <h1 class="page-title">音效</h1>
+            <p class="page-desc">调整均衡曲线、动态低音与环绕增强。</p>
+          </div>
+          <div class="page-head__actions">
+            <button class="btn btn--ghost"><i data-lucide="rotate-ccw"></i>重置</button>
+          </div>
+        </div>
+
+        <div class="work">
+          <!-- EQ panel -->
+          <section class="panel">
+            <div class="panel__head">
+              <h2 class="panel__title">均衡器</h2>
+              <div class="select" style="width:200px;margin-left:auto">
+                <select aria-label="均衡预置" data-eq-preset>
+                  <option value="0" selected>3A通用（默认）</option>
+                  <option value="1">无畏契约</option>
+                  <option value="2">三角洲烽火</option>
+                  <option value="3">三角洲全面</option>
+                  <option value="4">PUBG</option>
+                  <option value="5">CS2</option>
+                  <option value="6">CF</option>
+                  <option value="7">APEX</option>
+                  <option value="8">和平精英</option>
+                  <option value="9">暗区突围</option>
+                  <option value="10">永劫无间</option>
+                  <option value="11">守望先锋</option>
+                  <option value="custom">自定义</option>
+                </select>
+                <i data-lucide="chevron-down"></i>
+              </div>
+            </div>
+            <div class="eq" data-eq data-freqs="30,60,120,250,500,1000,2000,4000,8000,16000" data-band-labels="30Hz,60Hz,120Hz,250Hz,500Hz,1kHz,2kHz,4kHz,8kHz,16kHz" data-gains="0,1,1,2,2,3,2,1,0,-1">
+              <svg viewBox="0 0 640 240" role="group" aria-label="10 段均衡器曲线">
+                <g class="eq__grid-group"></g>
+                <line class="eq__axis" x1="40" y1="116" x2="620" y2="116"></line>
+                <polyline class="eq__curve" points=""></polyline>
+                <g class="eq__nodes"></g>
+                <g class="eq__labels"></g>
+              </svg>
+              <p class="eq__readout" data-eq-readout>正在读取曲线…</p>
+            </div>
+            <p class="field__hint">拖拽节点调整增益，键盘 ←/→ 微调 0.5dB，Home 归零。范围 -12 ~ +12 dB。12 组游戏预设的 10 段增益数据逐组取自原版驱动配置（EQPreset.json）。</p>
+          </section>
+
+          <!-- Param panel -->
+          <section class="panel">
+            <div class="field">
+              <div class="field__row">
+                <i data-lucide="power"></i>
+                <span class="field__label">音效增强总开关</span>
+                <label class="switch" style="margin-left:auto">
+                  <input type="checkbox" checked aria-label="音效增强总开关">
+                  <span class="switch__track switch__track--accent"></span>
+                </label>
+              </div>
+              <p class="field__hint">一键启停全部音效处理，对应原版 SoundEffectSwitch。关闭后以下各项临时失效但不丢失设置。</p>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+              <div class="field__row">
+                <i data-lucide="waves"></i>
+                <span class="field__label">动态低音</span>
+                <span class="field__val" data-slider-val>45%</span>
+              </div>
+              <div class="slider">
+                <div class="slider__track"><div class="slider__fill" style="width:45%"></div></div>
+                <input type="range" min="0" max="100" value="45" aria-label="动态低音强度">
+                <span class="slider__thumb" style="left:45%"></span>
+              </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+              <div class="field__row">
+                <i data-lucide="sun"></i>
+                <span class="field__label">音频明亮化</span>
+                <span class="field__val" data-slider-val>50%</span>
+              </div>
+              <div class="slider">
+                <div class="slider__track"><div class="slider__fill" style="width:50%"></div></div>
+                <input type="range" min="0" max="100" value="50" aria-label="音频明亮化强度">
+                <span class="slider__thumb" style="left:50%"></span>
+              </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+              <div class="field__row">
+                <i data-lucide="orbit"></i>
+                <span class="field__label">环绕声</span>
+                <label class="switch" style="margin-left:auto">
+                  <input type="checkbox" checked aria-label="环绕声开关">
+                  <span class="switch__track switch__track--accent"></span>
+                </label>
+              </div>
+              <div class="field__row" style="margin-bottom:var(--space-2)">
+                <span class="field__label muted" style="font-weight:400">环绕强度</span>
+                <span class="field__val" data-slider-val>60%</span>
+              </div>
+              <div class="slider slider--accent">
+                <div class="slider__track"><div class="slider__fill slider__fill--accent" style="width:60%"></div></div>
+                <input type="range" min="0" max="100" value="60" aria-label="环绕强度">
+                <span class="slider__thumb" style="left:60%"></span>
+              </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+              <div class="field__row">
+                <i data-lucide="audio-lines"></i>
+                <span class="field__label">人声清晰度</span>
+                <span class="field__val" data-slider-val>50%</span>
+              </div>
+              <div class="slider">
+                <div class="slider__track"><div class="slider__fill" style="width:50%"></div></div>
+                <input type="range" min="0" max="100" value="50" aria-label="人声清晰度">
+                <span class="slider__thumb" style="left:50%"></span>
+              </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+              <div class="field__row">
+                <i data-lucide="volume-2"></i>
+                <span class="field__label">智能音量</span>
+                <label class="switch" style="margin-left:auto">
+                  <input type="checkbox" aria-label="智能音量开关">
+                  <span class="switch__track"></span>
+                </label>
+              </div>
+              <p class="field__hint">根据环境噪声与内容类型自动平衡音量，不改变动态细节。</p>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+              <div class="field__row"><i data-lucide="blocks"></i><span class="field__label">环境音效</span></div>
+              <div class="segmented" role="group" aria-label="环境音效模式">
+                <button aria-pressed="true">音乐厅</button>
+                <button aria-pressed="false">浴室</button>
+                <button aria-pressed="false">水下</button>
+                <button aria-pressed="false">空间</button>
+              </div>
+              <div class="field__row" style="margin-top:var(--space-3)">
+                <span class="field__label muted" style="font-weight:400">房间大小</span>
+              </div>
+              <div class="segmented" role="group" aria-label="环境房间大小">
+                <button aria-pressed="true">小</button>
+                <button aria-pressed="false">中</button>
+                <button aria-pressed="false">大</button>
+              </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+              <div class="field__row">
+                <i data-lucide="bell-ring"></i>
+                <span class="field__label">警觉模式</span>
+                <label class="switch" style="margin-left:auto">
+                  <input type="checkbox" aria-label="警觉模式开关">
+                  <span class="switch__track"></span>
+                </label>
+              </div>
+              <p class="field__hint">开启后耳机透传门铃、警报与人声呼喊，戴耳机也能保持对周围环境的感知。</p>
+            </div>
+          </section>
+        </div>
+
+        <hr class="divider">
+        <div class="row" style="justify-content:flex-end">
+          <button class="btn btn--ghost"><i data-lucide="rotate-ccw"></i>恢复默认</button>
+          <button class="btn btn--primary"><i data-lucide="check"></i>保存配置</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="assets/eq-presets.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

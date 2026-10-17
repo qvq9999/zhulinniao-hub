@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://zhulinniao-hub/schemas/eq2-preset.schema.json",
+  "title": "EQ2Preset (legacy UI/Configs/EQ2Preset.json)",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["Index", "Gain", "Frequency", "Quality Factor", "Filter Type"],
+    "properties": {
+      "Index": { "type": "integer", "minimum": 0 },
+      "Gain": { "type": "array", "minItems": 10, "maxItems": 10, "items": { "type": "integer" } },
+      "Frequency": { "type": "array", "minItems": 10, "maxItems": 10, "items": { "type": "number" } },
+      "Quality Factor": { "type": "array", "minItems": 10, "maxItems": 10, "items": { "type": "number" } },
+      "Filter Type": { "type": "array", "minItems": 10, "maxItems": 10, "items": { "type": "integer" } }
+    },
+    "additionalProperties": false
+  }
+}

@@ -1,0 +1,181 @@
+/* ============================================================
+   Zhuque Headphone Hub — Design Tokens (prototype copy)
+   Source: design/design-tokens.css — self-contained for file:// rendering
+   Rule: all colors must reference tokens (except #fff/#000)
+   ============================================================ */
+
+:root {
+  --bg: #F6F7F8;
+  --surface: #FFFFFF;
+  --fg: #1A1D1F;
+  --muted: #767C82;
+  --border: #E2E5E8;
+
+  --accent: #C33B2E;
+  --accent-2: #3F7A5A;
+
+  --font-display: "Inter", "Noto Sans SC", -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Inter", "Noto Sans SC", -apple-system, "Segoe UI", sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 2rem;
+  --text-4xl: 2.5rem;
+  --leading-tight: 1.2;
+  --leading-body: 1.6;
+  --tracking-display: -0.02em;
+  --tracking-caps: 0.08em;
+
+  --sidebar-width: 220px;
+  --topbar-height: 56px;
+  --container-max: 1120px;
+  --section-y: 48px;
+
+  --accent-on: #FFFFFF;
+  --accent-hover: #AF3327;
+  --accent-active: #982C22;
+  --accent-soft: #FBE9E7;
+  --accent-ring: rgba(195, 59, 46, 0.32);
+  --accent-2-soft: #E7F0EA;
+
+  --success: #2E7D4F;
+  --warn: #C98A16;
+  --danger: #B4322A;
+  --info: #3F7A5A;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+
+  --elev-flat: none;
+  --elev-ring: 0 0 0 1px var(--border);
+  --elev-raised: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06);
+
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  --focus-ring: 0 0 0 3px var(--accent-ring);
+
+  --surface-2: #EEF0F2;
+  --fg-2: #4A5054;
+  --meta: #9AA0A6;
+  --border-soft: #EDEFF1;
+
+  --equ-mid: #C33B2E;
+  --equ-grid: #E2E5E8;
+  --hotspot-line: rgba(195, 59, 46, 0.45);
+  --hotspot-halo: rgba(195, 59, 46, 0.18);
+  --device-muted-filter: grayscale(0.72) brightness(0.98) opacity(0.72);
+}
+
+:root[data-theme="dark"] {
+  --bg: #141617;
+  --surface: #1D2022;
+  --fg: #F3F4F5;
+  --muted: #8C9296;
+  --border: rgba(255, 255, 255, 0.10);
+
+  --accent: #D9544A;
+  --accent-2: #4F9068;
+
+  --accent-on: #FFFFFF;
+  --accent-hover: #E06A60;
+  --accent-active: #C24A41;
+  --accent-soft: rgba(217, 84, 74, 0.14);
+  --accent-ring: rgba(217, 84, 74, 0.40);
+  --accent-2-soft: rgba(79, 144, 104, 0.16);
+
+  --success: #4FAE72;
+  --warn: #D9A441;
+  --danger: #E06A60;
+  --info: #4F9068;
+
+  --elev-flat: none;
+  --elev-ring: 0 0 0 1px var(--border);
+  --elev-raised: 0 2px 4px rgba(0, 0, 0, 0.32), 0 8px 24px rgba(0, 0, 0, 0.36);
+
+  --surface-2: #262A2C;
+  --fg-2: #C6CBCF;
+  --meta: #63696D;
+  --border-soft: rgba(255, 255, 255, 0.06);
+
+  --equ-mid: #D9544A;
+  --equ-grid: rgba(255, 255, 255, 0.10);
+  --hotspot-line: rgba(217, 84, 74, 0.50);
+  --hotspot-halo: rgba(217, 84, 74, 0.20);
+  --device-muted-filter: grayscale(0.72) brightness(0.72) opacity(0.78);
+}
+
+html { color-scheme: light dark; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  height: 40px; padding: 0 var(--space-4);
+  font-family: var(--font-body); font-size: var(--text-sm);
+  font-weight: 500; letter-spacing: 0.01em;
+  border-radius: var(--radius-sm); border: 1px solid transparent;
+  cursor: pointer; text-decoration: none;
+  transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard);
+}
+.btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.btn--primary { background: var(--accent); color: var(--accent-on); }
+.btn--primary:hover { background: var(--accent-hover); }
+.btn--primary:active { background: var(--accent-active); }
+.btn--secondary { background: transparent; color: var(--accent); border-color: var(--border); }
+.btn--secondary:hover { border-color: var(--accent); }
+.btn--ghost { background: transparent; color: var(--fg); }
+.btn--ghost:hover { background: var(--surface-2); }
+.btn[disabled], .btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: var(--space-5);
+  transition: border-color var(--motion-fast) var(--ease-standard);
+}
+.card:hover { border-color: var(--accent); }
+
+.input {
+  height: 40px; width: 100%; padding: 0 var(--space-3);
+  background: var(--surface); color: var(--fg);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-family: var(--font-body); font-size: var(--text-sm);
+}
+.input:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

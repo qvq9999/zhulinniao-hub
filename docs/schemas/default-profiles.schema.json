@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://zhulinniao-hub/schemas/default-profiles.schema.json",
+  "title": "DefaultProfiles (legacy UI/Configs/DefaultProfiles.json)",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["ProfileName", "Templates"],
+    "properties": {
+      "ProfileName": { "type": "string" },
+      "Templates": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["VendorID", "ProductID", "PlaybackProperties", "CaptureProperties"],
+          "properties": {
+            "VendorID": { "type": "integer" },
+            "ProductID": { "type": "integer" },
+            "PlaybackProperties": { "type": "object", "additionalProperties": true },
+            "CaptureProperties": { "type": "object", "additionalProperties": true }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "additionalProperties": false
+  }
+}

@@ -18,6 +18,7 @@ import Segmented from '../components/Segmented';
 import FitScale from '../components/FitScale';
 import { useDevice } from '../device/DeviceContext';
 import { useSetting } from '../state/settings';
+import { THEME_FALLBACK, THEME_KEY, type ThemeVal } from '../state/theme';
 import {
   errText,
   onUpdateProgress,
@@ -45,10 +46,9 @@ import {
  *   - 通用设置：语言 / 主题 / 开机自启动 / 关闭窗口时（点 × 的行为）
  *
  * 说明：关闭策略在本页只改设置值，实际同步给后端由常驻的 CloseConfirm 组件统一完成，
- * 避免两处各写一份导致状态漂移。
+ * 避免两处各写一份导致状态漂移。主题同理：本页只负责设置值，
+ * 真正的 data-theme 应用由常驻的 ThemeSync 完成（见 state/theme.tsx）。
  */
-
-type ThemeVal = 'light' | 'dark' | 'system';
 
 const fmtFormat = (d: DeviceDetailsDto | null): string => {
   if (!d || !d.sample_rate) return '未提供';
@@ -60,7 +60,7 @@ export default function Device() {
   const [details, setDetails] = useState<DeviceDetailsDto | null>(null);
   const [detailsNote, setDetailsNote] = useState<string | null>(null);
   const [language, setLanguage] = useState('简体中文');
-  const [theme, setTheme] = useState<ThemeVal>('light');
+  const [theme, setTheme] = useSetting<ThemeVal>(THEME_KEY, THEME_FALLBACK);
   const [autorun, setAutorun] = useState(false);
   const [autostartNote, setAutostartNote] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -184,14 +184,6 @@ export default function Device() {
       setDetailsNote(`设置失败：${errText(e)}`);
     }
   };
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'dark') root.setAttribute('data-theme', 'dark');
-    else if (theme === 'light') root.removeAttribute('data-theme');
-    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) root.setAttribute('data-theme', 'dark');
-    else root.removeAttribute('data-theme');
-  }, [theme]);
 
   const toast = (msg: string) => {
     setToastMsg(msg);

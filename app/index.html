@@ -25,6 +25,24 @@
       }
     </style>
     <script>
+      // 首帧前落地主题：避免深色用户每次启动先闪一帧浅色
+      // （与 src/state/theme.tsx 的读取规则必须一致：light 默认 / dark / system）
+      (function () {
+        try {
+          var raw = window.localStorage.getItem('zhub-settings');
+          var theme = raw ? JSON.parse(raw).theme || 'light' : 'light';
+          var dark = theme === 'dark' ||
+            (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.style.colorScheme = 'dark';
+          } else if (theme === 'light') {
+            document.documentElement.style.colorScheme = 'light';
+          }
+        } catch (e) { /* 配置损坏时按默认浅色走 */ }
+      })();
+    </script>
+    <script>
       // 启动期错误捕获 + 磁盘上报（Tauri 环境）；任何异常都会显现具体原因，不再白屏黑屏
       (function () {
         function report(msg) {

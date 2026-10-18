@@ -113,6 +113,8 @@ body { overflow: hidden; }
 /* ---------- 自适应缩放容器（内容超限等比缩小，页面不滚动） ---------- */
 .fit { flex: 1; min-height: 0; position: relative; overflow: hidden; }
 .fit__inner { width: 100%; }
+/* 首帧兜底：比例尚未算好（容器还没有尺寸）时不显示，避免"先按 1 倍画出来再缩" */
+.fit__inner:not([data-fit-ready]) { opacity: 0; }
 /* 长页面（如设置页）不缩小字号，改为纵向滚动：字体与其他页面保持一致 */
 .fit.fit--scroll { overflow-y: auto; overflow-x: hidden; padding-right: 2px; }
 .fit.fit--scroll .fit__inner { padding-bottom: var(--space-4); }
@@ -620,8 +622,12 @@ body { overflow: hidden; }
 .canvas--compact .quick { border-top: 1px solid var(--border-soft); }
 .canvas--compact .quick__title { margin-bottom: 4px; }
 
-/* 效果参数数值输入（等级/截止频率/智能音量等级） */
-.eq-num {
+/* 麦克风参数区：两套内容叠在同一栅格单元，高度恒取最大值，切换页签卡片尺寸不变 */
+.mic-params { display: grid; }
+.mic-params > * { grid-area: 1 / 1; min-width: 0; }
+.mic-params__ghost { visibility: hidden; pointer-events: none; }
+
+/* 效果参数数值输入（等级/截止频率/智能音量等级） */.eq-num {
   width: 120px; height: 40px; padding: 0 var(--space-3);
   background: var(--surface); color: var(--fg);
   border: 1px solid var(--border); border-radius: var(--radius-sm);
@@ -732,6 +738,9 @@ body { overflow: hidden; }
   background: var(--accent); opacity: 0.22; border-radius: 1px;
 }
 .eqf__freq { font-size: 10px; color: var(--meta); text-align: center; white-space: nowrap; }
+/* 首屏回填：真机读数落位时不播放过渡，避免"进页面推子动一下" */
+.eqf--instant .eqf__fill,
+.eqf--instant .eqf__thumb { transition: none; }
 
 /* EQ 紧凑读数（替代原先会折行的长句） */
 .eq__meta {

@@ -64,6 +64,22 @@ fn curl_path() -> String {
     format!("{sys}\\System32\\curl.exe")
 }
 
+/// 构造 curl 命令，并**始终带上 CREATE_NO_WINDOW**。
+///
+/// 为什么不直接 `Command::new(curl_path())`：GUI 进程（本应用）spawn 控制台程序时，
+/// Windows 默认会给子进程新建一个控制台 —— 用户看到的就是「点检查更新弹一下黑色终端窗」。
+/// `/S` 静默安装那条命令早就带了该标志，这里补上查询/下载两条，全程无窗口。
+fn curl_cmd() -> Command {
+    let mut cmd = Command::new(curl_path());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd
+}
+
 fn current_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
@@ -93,7 +109,7 @@ fn is_newer(a: &str, b: &str) -> bool {
 }
 
 fn fetch_latest() -> Result<GhRelease, String> {
-    let out = Command::new(curl_path())
+    let out = curl_cmd()
         .args([
             "-sS",
             "-L",
@@ -164,7 +180,7 @@ fn download_to(
 ) -> Result<u64, String> {
     let _ = std::fs::remove_file(dest);
 
-    let mut child = Command::new(curl_path())
+    let mut child = curl_cmd()
         .args(["-sS", "-L", "--ssl-no-revoke", "--max-time", "1800", "-o"])
         .arg(dest)
         .arg(url)

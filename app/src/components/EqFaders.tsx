@@ -12,6 +12,12 @@ export interface EqFadersProps {
   step?: number;
   /** 推子轨道高度 px */
   height?: number;
+  /**
+   * 关闭过渡动画（仅用于「首屏回填」）：真机回读把默认曲线换成真实曲线时，
+   * 若过渡生效，10 根推子会一起滑到新位置 —— 用户看到的就是「进页面推子动一下」。
+   * 首帧以无动画方式落位，之后恢复正常过渡（拖动才有细腻跟随）。
+   */
+  instant?: boolean;
   onChange: (gains: number[]) => void;
   ariaLabel?: string;
 }
@@ -28,6 +34,7 @@ export default function EqFaders({
   maxDb = 20,
   step = 1,
   height = 240,
+  instant = false,
   onChange,
   ariaLabel = '均衡器推子',
 }: EqFadersProps) {
@@ -92,7 +99,7 @@ export default function EqFaders({
   const fmt = (g: number) => (g > 0 ? `+${g}` : `${g}`);
 
   return (
-    <div className="eqf" role="group" aria-label={ariaLabel}>
+    <div className={`eqf${instant ? ' eqf--instant' : ''}`} role="group" aria-label={ariaLabel}>
       {/* 顶部：各段当前 dB */}
       <div className="eqf__vals">
         {labels.map((t, i) => (

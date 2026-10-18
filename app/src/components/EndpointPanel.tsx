@@ -125,27 +125,36 @@ export default function EndpointPanel({ capture, title }: EndpointPanelProps) {
 
       <hr className="divider" />
 
-      {channels >= 2 ? (
-        <SliderRow
-          label="平衡"
-          value={balance}
-          min={0}
-          max={100}
-          onChange={(v) => {
-            setBalance(v);
-            const [l, r] = balanceToChannels(v);
-            void write(
-              () => tauriSetAudioBalance(capture, l, r),
-              `已写入平衡：左 ${Math.round(l * 100)}% / 右 ${Math.round(r * 100)}%（相对当前音量，音量不变）`,
-            );
-          }}
-          formatValue={(v) => (v === 50 ? '居中' : `左 ${100 - v}% · 右 ${v}%`)}
-          ariaLabel="左右声道平衡"
-          hint={note && (note.includes('平衡') || note.includes('失败')) ? note : '拖动只改左右分配，不改总音量'}
-        />
-      ) : (
-        <p className="field__hint">当前端点声道数不足 2，不提供左右平衡。</p>
-      )}
+      {/*
+        平衡滑杆**始终渲染**（声道数不足 2 时禁用并给出原因）。
+        之前是 `channels >= 2 ? 滑杆 : 一行提示`，而 channels 要等真机读取完才有值，
+        于是页面先画「一行提示」、随后换成整条滑杆 —— 概览页因此每次打开都会长高约 117px，
+        配合整页缩放就是用户看到的「闪一下」。固定占位后首屏高度即是最终高度。
+      */}
+      <SliderRow
+        label="平衡"
+        value={balance}
+        min={0}
+        max={100}
+        disabled={channels < 2}
+        onChange={(v) => {
+          setBalance(v);
+          const [l, r] = balanceToChannels(v);
+          void write(
+            () => tauriSetAudioBalance(capture, l, r),
+            `已写入平衡：左 ${Math.round(l * 100)}% / 右 ${Math.round(r * 100)}%（相对当前音量，音量不变）`,
+          );
+        }}
+        formatValue={(v) => (v === 50 ? '居中' : `左 ${100 - v}% · 右 ${v}%`)}
+        ariaLabel="左右声道平衡"
+        hint={
+          channels < 2
+            ? '当前端点声道数不足 2，不提供左右平衡。'
+            : note && (note.includes('平衡') || note.includes('失败'))
+              ? note
+              : '拖动只改左右分配，不改总音量'
+        }
+      />
 
       <hr className="divider" />
 

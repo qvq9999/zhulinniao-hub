@@ -99,6 +99,27 @@ export default function Sound() {
   const writeTimer = useRef<number>(0);
 
   /**
+   * 推子首屏动画开关：挂载时先按默认曲线落位，真机回读后换成真实曲线。
+   * 若此时过渡生效，10 根推子会集体滑一段（用户反馈的「进音效控制推子动一下」）。
+   * 做法：回读落位这一帧保持 `transition: none`，两帧后再恢复过渡。
+   */
+  const [faderAnim, setFaderAnim] = useState(false);
+  useEffect(() => {
+    if (!ready) {
+      setFaderAnim(false);
+      return;
+    }
+    let second = 0;
+    const first = window.requestAnimationFrame(() => {
+      second = window.requestAnimationFrame(() => setFaderAnim(true));
+    });
+    return () => {
+      window.cancelAnimationFrame(first);
+      if (second) window.cancelAnimationFrame(second);
+    };
+  }, [ready]);
+
+  /**
    * 参数面板高度锁定：以「均衡器」面板的实测高度为基准，
    * 之后切到其它效果页签时面板高度保持不变，整页不会忽大忽小。
    *
@@ -315,11 +336,15 @@ export default function Sound() {
                 </span>
               </div>
 
-              {!on && (
-                <div className="inline-status inline-status--warn" style={{ marginBottom: 'var(--space-4)' }}>
-                  当前未启用「{current.short}」：参数可调，开启后生效（与原版一致）。
-                </div>
-              )}
+              {/* 提示条固定占位（与麦克风页同一口径）：未启用时才可见，
+                  但始终占据同样的高度，切换效果页签时卡片不会因它的出现/消失而改变尺寸。 */}
+              <div
+                className="inline-status inline-status--warn"
+                style={{ marginBottom: 'var(--space-4)', visibility: on ? 'hidden' : 'visible' }}
+                aria-hidden={on || undefined}
+              >
+                当前未启用：参数可调，开启后生效（与原版一致）。
+              </div>
 
               {/* ---------- 均衡器 ---------- */}
               {active === 'eq' && (
@@ -345,11 +370,17 @@ export default function Sound() {
                     ))}
                   </div>
 
-                  <EqFaders labels={EQ_BAND_LABELS} gains={gains} onChange={onGainsChange} height={240} />
+                  <EqFaders
+                    labels={EQ_BAND_LABELS}
+                    gains={gains}
+                    onChange={onGainsChange}
+                    height={240}
+                    instant={!faderAnim}
+                  />
 
                   <p className="field__hint">
                     每段一根推子，上下拖动单独调整该段增益（±20 dB，1 dB 步进）；键盘 ↑/↓ 微调、Shift 5 dB、Home 归零。
-                    12 组预设取自原版 cmediaEQPresetGain，应用预设会像原版一样同时写回增益 / 频率 / Q / 滤波四个数组。
+                    12 组预设取自原版 cmediaEQPresetGain；应用预设与原版一致——只写回 10 段增益，不改频率 / Q / 滤波。
                   </p>
 
                   <hr className="divider" />

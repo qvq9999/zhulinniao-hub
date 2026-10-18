@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 
 interface FitScaleProps {
   children: ReactNode;
@@ -27,22 +27,79 @@ const REF_W = 1060;
  *
  * 实现要点：
  * - 用 zoom 而非 transform：zoom 会重排（换行/栅格跟着变），文字保持矢量清晰；
- * - 比例 = min(基准比例, 本页实测所需比例)，基准比例只由窗口尺寸决定 → 各页一致；
- * - 同一页签内只减不增（lock），切换效果页签不会跳比例。
+ * - 比例上限 = 全站基准比例（只由窗口尺寸决定）→ 各页一致；
+ * - **二分求「刚好塞得下的最大比例」**：旧实现从 1 倍逐步缩小，遇到第一次适配就停，
+ *   会留下上百像素空白（内容在更小的 zoom 下重排后变矮），比例明显偏小；
+ * - 首帧在 **useLayoutEffect** 中测量（绘制前完成），页面一出现就是最终比例，不闪；
+ * - 挂载后按 60/180/400/800/1300/1750ms 复测 + 字体就位复测：
+ *   内容晚到时也能自动收进一屏，**不再需要用户手动拖一下窗口**；
+ * - 同一挂载内只允许继续缩小（绝不放大），切换页签不会跳比例。
  */
 export default function FitScale({ children, min = 0.55, scroll = false }: FitScaleProps) {
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   /** 本次挂载内已锁定的比例（同一页面切换页签时不再变大） */
   const locked = useRef(1);
-
-  useEffect(() => {
+  /** 已实际写入 DOM 的比例（避免同值重复写、减少无谓重排） */
+  const applied = useRef(0);
+  /**
+   * 用 useLayoutEffect 而不是 useEffect：首帧比例必须在**浏览器绘制之前**算好并写入，
+   * 否则用户先看到 1 倍大小的版面、再被缩到目标比例 —— 这就是「每次打开概览闪一下」。
+   */
+  useLayoutEffect(() => {
     const o = outer.current;
     const i = inner.current;
     if (!o || !i) return;
 
     let raf = 0;
     let scheduled = false;
+    let suspendUntil = 0;
+
+    const apply = (z: number) => {
+      // 以 DOM 上的实际值为准：二分测量过程会把 zoom 停在测试值上
+      const cur = Number.parseFloat(i.style.zoom || '1') || 1;
+      if (Math.abs(cur - z) < 0.001) {
+        applied.current = z;
+        i.dataset.fitZoom = z.toFixed(3);
+        return;
+      }
+      applied.current = z;
+      // 自己改 zoom 会触发尺寸变化，短时间内的 RO 回调一律忽略，避免自激
+      suspendUntil = performance.now() + 320;
+      i.style.zoom = String(z);
+      i.dataset.fitZoom = z.toFixed(3);
+    };
+
+    /** 把 zoom 设为 z 后读取**视觉尺寸**（zoom 会重排，故每次都要实测） */
+    const measureAt = (z: number) => {
+      i.style.zoom = String(z);
+      const r = i.getBoundingClientRect();
+      return r;
+    };
+
+    /**
+     * 二分求「在 [min, cap] 内刚好不溢出」的最大比例。
+     * 内容高度随 zoom 单调增加（zoom 变小时排版宽度变大、换行变少），故可二分。
+     */
+    const solve = (availH: number, availW: number, cap: number) => {
+      const top = measureAt(cap);
+      if (top.height <= availH + 0.5 && top.width <= availW + 0.5) return cap;
+
+      const lo0 = Math.min(min, cap);
+      const atLo = measureAt(lo0);
+      if (atLo.height > availH + 0.5 || atLo.width > availW + 0.5) return lo0;
+
+      let lo = lo0;
+      let hi = cap;
+      for (let n = 0; n < 8; n += 1) {
+        const mid = (lo + hi) / 2;
+        const r = measureAt(mid);
+        if (r.height <= availH + 0.5 && r.width <= availW + 0.5) lo = mid;
+        else hi = mid;
+        if (hi - lo < 0.003) break;
+      }
+      return lo;
+    };
 
     const measure = (reset = false) => {
       const availH = o.clientHeight;
@@ -57,33 +114,22 @@ export default function FitScale({ children, min = 0.55, scroll = false }: FitSc
       if (scroll) {
         const final = Math.max(min, base);
         locked.current = final;
-        i.style.zoom = String(final);
-        i.dataset.fitZoom = final.toFixed(3);
+        apply(final);
+        i.dataset.fitReady = '1';
         return;
       }
 
-      // 本页实测所需比例（从 1 倍起迭代收敛）
-      let need = 1;
-      i.style.zoom = '1';
-      for (let n = 0; n < 4; n += 1) {
-        const r = i.getBoundingClientRect();
-        if (r.height <= availH + 0.5 && r.width <= availW + 0.5) break;
-        const factor = Math.min(availH / Math.max(r.height, 1), availW / Math.max(r.width, 1));
-        const next = Math.max(min, Math.min(1, need * factor * 0.996));
-        if (Math.abs(next - need) < 0.002) {
-          need = next;
-          break;
-        }
-        need = next;
-        i.style.zoom = String(need);
-        if (need <= min) break;
-      }
+      const cap = Math.max(min, base);
+      const target = solve(availH, availW, cap);
 
-      const target = Math.max(min, Math.min(base, need));
+      // 同一挂载内**只允许继续缩小**：内容晚到时收进一屏（不再被裁掉），
+      // 但绝不放大 —— 否则会出现「先小后大」的跳动（用户投诉的"闪一下/忽大忽小"）。
+      // 需要放大只能在窗口尺寸变化（onResize → reset）时发生。
       const final = Math.min(locked.current, target);
       locked.current = final;
-      i.style.zoom = String(final);
-      i.dataset.fitZoom = final.toFixed(3);
+      apply(final);
+      // 比例已落定：解除首帧遮罩（正常情况下这一步在浏览器绘制前就完成了）
+      i.dataset.fitReady = '1';
     };
 
     const schedule = () => {
@@ -102,12 +148,26 @@ export default function FitScale({ children, min = 0.55, scroll = false }: FitSc
     };
 
     measure();
-    const ro = new ResizeObserver(schedule);
+
+    // 异步内容（真机回读 / 字体 / 端点面板）晚到导致的高度变化 → 多次复测兜底。
+    // 这是「打开概览要手动拖一下窗口才完整」的根因修复点。
+    const timers = [60, 180, 400, 800, 1300, 1750].map((ms) =>
+      window.setTimeout(schedule, ms),
+    );
+    void document.fonts?.ready.then(schedule).catch(() => undefined);
+
+    const ro = new ResizeObserver(() => {
+      if (performance.now() < suspendUntil) return; // 忽略自己改 zoom 引发的变化
+      schedule();
+    });
     ro.observe(o);
+    // 只观察外层：内层会因 zoom 自身抖动，改为定时 + 字体复测覆盖
     window.addEventListener('resize', onResize);
+
     return () => {
       ro.disconnect();
       window.removeEventListener('resize', onResize);
+      timers.forEach((t) => window.clearTimeout(t));
       if (raf) window.cancelAnimationFrame(raf);
     };
   }, [min, scroll]);

@@ -41,6 +41,15 @@ export default function Mic() {
   const [ready, setReady] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
+  /**
+   * 参数区高度对齐：两个效果页签内容高度不同（魔幻音效是单选按钮组、
+   * 麦克风降噪是滑杆），直接切换会让卡片明显长高/变矮（用户反馈「卡片大小变化」）。
+   *
+   * 做法：两套内容**叠在同一个栅格单元**里，非当前页签的那套 `visibility: hidden`
+   * （仍参与布局、但不显示/不可聚焦/不进无障碍树）。于是参数区高度恒等于两者的最大值，
+   * 首次切换就已经等高 —— 不依赖 JS 测量，也不会陷入「量高度→改高度→再量」的循环。
+   */
+
   const load = useCallback(async () => {
     try {
       setFields(await tauriFieldsRead());
@@ -70,6 +79,45 @@ export default function Mic() {
   const current = MIC_EFFECTS.find((e) => e.key === active) ?? MIC_EFFECTS[0];
   const on = fields[`${active}_enabled`] === 1;
   const missing = (f: string) => !isAvail(fields[f]);
+
+  /** 参数区内容（两个页签共用同一份渲染，探针副本复用它来量高度） */
+  const renderBody = (key: MicFxKey) => {
+    const enabled = fields[`${key}_enabled`] === 1;
+    const cls = enabled ? '' : 'is-disabled';
+    if (key === 'magicvoice') {
+      return (
+        <div className={cls}>
+          <div className="field">
+            <div className="field__row">
+              <span className="field__label">模式</span>
+              <span className="field__val mono">MagicVoice_Selection</span>
+            </div>
+            <Segmented
+              ariaLabel="魔幻音效模式"
+              options={MAGIC_MODES}
+              value={MAGIC_MODES[isAvail(fields.magicvoice_selection) ? fields.magicvoice_selection : 0] ?? MAGIC_MODES[0]}
+              onChange={(v) => writeField('magicvoice_selection', MAGIC_MODES.indexOf(v), '魔幻音效模式')}
+              disabled={!enabled || missing('magicvoice_selection')}
+            />
+            <p className="field__hint">取值：0=怪兽 / 1=卡通 / 2=男生 / 3=女生（原版逐字）。</p>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className={cls}>
+        <SliderRow
+          label="降噪强度"
+          value={isAvail(fields.micnr_level) ? fields.micnr_level : 40}
+          min={6}
+          max={40}
+          onChange={(v) => void writeField('micnr_level', v, '降噪强度')}
+          disabled={!enabled || missing('micnr_level')}
+          hint={missing('micnr_level') ? '该设备未提供该键。' : '原版量程 6–40（INF 默认 15，真机现值 40）。'}
+        />
+      </div>
+    );
+  };
 
   return (
     <div className="app">
@@ -154,44 +202,35 @@ export default function Mic() {
                 </span>
               </div>
 
-              {!on && (
-                <div className="inline-status inline-status--warn" style={{ marginBottom: 'var(--space-4)' }}>
-                  当前未启用「{current.short}」：参数可调，开启后生效。
-                </div>
-              )}
+              {/*
+                提示条**始终渲染、占位固定**：原先「未启用时才出现」会让两张卡片的高度
+                随各自开关状态差出一条 38px 的提示条（本机 魔幻音效=关、麦克风降噪=开），
+                用户看到的就是「点一下换个效果，卡片突然长高/变矮」。
+                文案里不带效果名，两页签的行数完全一致；启用时仅隐藏（保留占位）。
+              */}
+              <div
+                className="inline-status inline-status--warn"
+                style={{ marginBottom: 'var(--space-4)', visibility: on ? 'hidden' : 'visible' }}
+                aria-hidden={on || undefined}
+              >
+                当前未启用：参数可调，开启后生效。
+              </div>
 
-              {active === 'magicvoice' && (
-                <div className={on ? '' : 'is-disabled'}>
-                  <div className="field">
-                    <div className="field__row">
-                      <span className="field__label">模式</span>
-                      <span className="field__val mono">MagicVoice_Selection</span>
-                    </div>
-                    <Segmented
-                      ariaLabel="魔幻音效模式"
-                      options={MAGIC_MODES}
-                      value={MAGIC_MODES[isAvail(fields.magicvoice_selection) ? fields.magicvoice_selection : 0] ?? MAGIC_MODES[0]}
-                      onChange={(v) => writeField('magicvoice_selection', MAGIC_MODES.indexOf(v), '魔幻音效模式')}
-                      disabled={!on || missing('magicvoice_selection')}
-                    />
-                    <p className="field__hint">取值：0=怪兽 / 1=卡通 / 2=男生 / 3=女生（原版逐字）。</p>
-                  </div>
+              {/* 参数区：两套内容叠放，高度恒取最大值 → 切换页签卡片尺寸完全不变 */}
+              <div className="mic-params">
+                <div
+                  className={active === 'magicvoice' ? '' : 'mic-params__ghost'}
+                  aria-hidden={active === 'magicvoice' ? undefined : true}
+                >
+                  {renderBody('magicvoice')}
                 </div>
-              )}
-
-              {active === 'micnr' && (
-                <div className={on ? '' : 'is-disabled'}>
-                  <SliderRow
-                    label="降噪强度"
-                    value={isAvail(fields.micnr_level) ? fields.micnr_level : 40}
-                    min={6}
-                    max={40}
-                    onChange={(v) => void writeField('micnr_level', v, '降噪强度')}
-                    disabled={!on || missing('micnr_level')}
-                    hint={missing('micnr_level') ? '该设备未提供该键。' : '原版量程 6–40（INF 默认 15，真机现值 40）。'}
-                  />
+                <div
+                  className={active === 'micnr' ? '' : 'mic-params__ghost'}
+                  aria-hidden={active === 'micnr' ? undefined : true}
+                >
+                  {renderBody('micnr')}
                 </div>
-              )}
+              </div>
             </section>
           </div>
           </FitScale>

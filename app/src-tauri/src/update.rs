@@ -260,10 +260,53 @@ pub fn update_download(
     Ok(dest.to_string_lossy().to_string())
 }
 
+/// 安装完成标记：提权链在装完后创建它，非提权守望者见到它就重新拉起应用。
+fn done_marker() -> PathBuf {
+    download_dir().join(".installed")
+}
+
+fn ps_lit(s: &str) -> String {
+    format!("'{}'", s.replace('\'', "''"))
+}
+
+/// 生成提权安装脚本内容（单独抽出来便于测试）。
+///
+/// 细节说明：
+/// - `chcp 65001` + UTF-8 写入：用户名含中文时 `%TEMP%` 路径也是中文，不切代码页会乱码；
+/// - 路径一律加引号，含空格也安全；
+/// - 安装包用 `start /wait` 启动：这样即便目标是 .bat（测试替身）也不会因批处理
+///   「调用即接管」而吃掉后续的删除与标记写入；对 .exe 语义仍是「等它装完再往下走」；
+/// - 安装包 `/S` 静默安装后**立刻删除**，再写完成标记（守望者靠标记判断结束）。
+fn install_script(setup: &std::path::Path, marker: &std::path::Path) -> String {
+    format!(
+        "@echo off\r\n\
+         chcp 65001 >nul\r\n\
+         ping -n 4 127.0.0.1 >nul\r\n\
+         start \"\" /wait \"{setup}\" /S\r\n\
+         del /f /q \"{setup}\"\r\n\
+         echo ok>\"{marker}\"\r\n",
+        setup = setup.to_string_lossy(),
+        marker = marker.to_string_lossy(),
+    )
+}
+
 /// 启动静默安装并退出应用。
 ///
-/// 顺序很重要：先等 2 秒（保证本进程来得及退出，安装包不会看到运行中的自己），
-/// 再 `/S` 静默安装，装完重新拉起应用。
+/// ⚠️ 安装包是 `perMachine`（清单里 `requestedExecutionLevel=requireAdministrator`），
+/// 未提权的进程直接 CreateProcess 会被系统拒绝（错误 740 / ERROR_ELEVATION_REQUIRED），
+/// **表现为「下载完就退出，什么都没装」**。因此必须走 ShellExecute + `runas` 让系统弹 UAC。
+///
+/// 为什么改成「批处理文件」而不是把整串命令塞给 `cmd /c`：
+/// `cmd.exe /c` 对引号的处理很刁钻（命令以引号开头时会吃掉首尾引号），
+/// 而 Rust 的 `Command::args` 又会把内层引号转义成 `\"`（cmd 不认这种转义），
+/// 两者叠加会把安装包路径截断 → 安装根本不执行。写成 .cmd 文件后只剩一次
+/// `cmd /c "<脚本路径>"`，参数由 ShellExecute 原样传递，稳定可控。
+///
+/// 完整链路：
+/// 1. `ShellExecuteW(runas, cmd.exe, /c "<install-update.cmd>")` —— 弹一次 UAC；
+/// 2. 脚本内：等本体退出（约 3s）→ `/S` 静默安装 → 删除安装包 → 写完成标记；
+/// 3. 同时起一个**非提权**的 PowerShell 守望者：等标记出现（最多 3 分钟）后启动新版本。
+///    刻意不用提权进程重启应用，否则新进程会继承管理员令牌。
 #[tauri::command]
 pub fn update_install(app: tauri::AppHandle, path: String) -> Result<(), String> {
     use std::os::windows::process::CommandExt;
@@ -274,18 +317,55 @@ pub fn update_install(app: tauri::AppHandle, path: String) -> Result<(), String>
         return Err(format!("安装包不存在：{path}"));
     }
     let exe = std::env::current_exe().map_err(|e| format!("取当前程序路径失败：{e}"))?;
+    let marker = done_marker();
+    let _ = std::fs::remove_file(&marker);
 
-    let script = format!(
-        "ping -n 3 127.0.0.1 >nul && \"{}\" /S && start \"\" \"{}\"",
-        setup.to_string_lossy(),
-        exe.to_string_lossy()
+    // ---- 1) 写提权安装脚本 ----
+    let script = download_dir().join("install-update.cmd");
+    std::fs::write(&script, install_script(&setup, &marker))
+        .map_err(|e| format!("写入安装脚本失败：{e}"))?;
+
+    let sys = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".into());
+    let cmd_exe = format!("{sys}\\System32\\cmd.exe");
+    let params = format!("/c \"{}\"", script.to_string_lossy());
+
+    let verb = windows::core::HSTRING::from("runas");
+    let file = windows::core::HSTRING::from(cmd_exe.as_str());
+    let prm = windows::core::HSTRING::from(params);
+    let ret = unsafe {
+        use windows::core::PCWSTR;
+        use windows::Win32::UI::Shell::ShellExecuteW;
+        use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+        ShellExecuteW(
+            windows::Win32::Foundation::HWND(std::ptr::null_mut()),
+            PCWSTR(verb.as_ptr()),
+            PCWSTR(file.as_ptr()),
+            PCWSTR(prm.as_ptr()),
+            PCWSTR::null(),
+            SW_SHOWNORMAL,
+        )
+    };
+    // ShellExecute 返回值 <= 32 表示失败（5 = 用户取消了 UAC 授权）
+    let code = ret.0 as isize;
+    if code <= 32 {
+        return Err(match code {
+            5 => "已取消管理员授权（UAC），更新没有继续。".to_string(),
+            _ => format!("无法以管理员权限启动安装程序（ShellExecute 返回 {code}）。"),
+        });
+    }
+
+    // ---- 2) 非提权守望者：安装结束后把新版本拉起来 ----
+    let watch = format!(
+        "$m={marker}; for($i=0;$i -lt 360;$i++){{ if(Test-Path -LiteralPath $m){{break}}; Start-Sleep -Milliseconds 500 }}; \
+         Start-Sleep -Milliseconds 600; \
+         try {{ Start-Process -FilePath {exe} }} catch {{ }}",
+        marker = ps_lit(&marker.to_string_lossy()),
+        exe = ps_lit(&exe.to_string_lossy()),
     );
-
-    Command::new("cmd")
-        .args(["/c", &script])
+    let _ = Command::new("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", &watch])
         .creation_flags(CREATE_NO_WINDOW)
-        .spawn()
-        .map_err(|e| format!("启动安装程序失败：{e}"))?;
+        .spawn();
 
     std::thread::spawn(move || {
         std::thread::sleep(Duration::from_millis(400));
@@ -300,7 +380,10 @@ pub fn app_version() -> String {
     current_version()
 }
 
-/// 启动时清理两小时前的下载残留
+/// 启动时清理下载残留：安装包（10 分钟以上）与完成标记。
+///
+/// 正常流程里安装包由提权链在装完后立刻 `del` 掉，这里只是兜底
+/// （例如用户在 UAC 处取消、或删除时文件仍被占用）。
 pub fn cleanup_stale() {
     let dir = download_dir();
     let Ok(entries) = std::fs::read_dir(&dir) else {
@@ -308,13 +391,18 @@ pub fn cleanup_stale() {
     };
     for e in entries.flatten() {
         let p = e.path();
+        let name = p.file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+        if name == ".installed" || name == "install-update.cmd" {
+            let _ = std::fs::remove_file(&p);
+            continue;
+        }
         if p.extension().map(|x| x == "exe").unwrap_or(false) {
             let old = e
                 .metadata()
                 .and_then(|m| m.modified())
                 .ok()
                 .and_then(|t| t.elapsed().ok())
-                .map(|d| d.as_secs() > 7200)
+                .map(|d| d.as_secs() > 600)
                 .unwrap_or(false);
             if old {
                 let _ = std::fs::remove_file(&p);
@@ -327,9 +415,42 @@ pub fn cleanup_stale() {
 mod tests {
     use super::*;
 
+    /// 验证安装脚本「静默安装 → 删除安装包 → 写完成标记」的逻辑与引号处理。
+    /// 用 .bat 冒充安装包，**不提权、不装任何东西**，只跑本地文件操作。
     #[test]
-    fn version_compare() {
-        assert!(is_newer("1.1.0", "1.0.0"));
+    fn install_script_runs_and_cleans_up() {
+        let dir = std::env::temp_dir().join("zhulinniao-hub-update-chain");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let setup = dir.join("fake setup.bat"); // 故意带空格，检验引号
+        std::fs::write(&setup, "@echo off\r\nexit /b 0\r\n").unwrap();
+        let marker = dir.join(".installed");
+
+        // 与正式流程同一份生成逻辑（只把 ping 延时压到 1 次，加快测试）
+        let script = dir.join("install-update.cmd");
+        let body = install_script(&setup, &marker).replace("ping -n 4", "ping -n 1");
+        std::fs::write(&script, body).unwrap();
+
+        // ⚠️ 必须用 raw_arg 模拟 ShellExecute 的「原样参数」传递：
+        // `args(["/c", "\"...\""])` 会被 CRT 转义成 `\"...\"`，cmd 不认这种转义。
+        use std::os::windows::process::CommandExt;
+        let out = Command::new("cmd")
+            .raw_arg(format!("/c \"{}\"", script.to_string_lossy()))
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "脚本执行失败：{:?}", out.status);
+        assert!(marker.is_file(), "应写出完成标记（守望者靠它判断安装结束）");
+        assert!(!setup.exists(), "安装包应在装完后被删除");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ps_literal_escapes_quotes() {
+        assert_eq!(ps_lit("C:\\a b\\x'"), "'C:\\a b\\x'''"); // 单引号翻倍
+    }
+
+    #[test]
+    fn version_compare() {        assert!(is_newer("1.1.0", "1.0.0"));
         assert!(is_newer("1.10.0", "1.9.9"));
         assert!(!is_newer("1.0.0", "1.0.0"));
         assert!(!is_newer("0.9.0", "1.0.0"));

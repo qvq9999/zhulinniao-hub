@@ -122,7 +122,9 @@ export default function Device() {
       const path = await tauriUpdateDownload(updateInfo.assetUrl, updateInfo.assetName, updateInfo.assetSize);
       setPhase('installing');
       setPercent(100);
-      setUpdateMsg('下载完成，正在启动静默安装…程序会自动关闭并重新打开（可能弹一次 UAC）。');
+      setUpdateMsg(
+        '下载完成，正在启动安装：请在弹出的 UAC 窗口点「是」。程序会自动关闭，安装完成后自动重新打开，安装包随后自动删除。',
+      );
       // 给界面一帧时间把状态渲染出来，再真正启动安装
       await new Promise((r) => setTimeout(r, 600));
       await tauriUpdateInstall(path);

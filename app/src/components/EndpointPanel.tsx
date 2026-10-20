@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
 import SliderRow from './SliderRow';
 import SwitchRow from './SwitchRow';
+import { useSettle } from '../state/useSettle';
 import {
   errText,
   tauriGetAudioState,
@@ -62,7 +63,10 @@ export default function EndpointPanel({ capture, title }: EndpointPanelProps) {
   const [channels, setChannels] = useState(0);
   const [device, setDevice] = useState('');
   const [note, setNote] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const interacting = useRef(0);
+  /** 首帧静止守卫：默认值（音量 50 / 未静音）被真机值覆盖时不要播过渡，否则滑杆与开关会自己动一下 */
+  const settled = useSettle(ready);
 
   const refresh = async () => {
     try {
@@ -78,6 +82,8 @@ export default function EndpointPanel({ capture, title }: EndpointPanelProps) {
       }
     } catch {
       setNote('浏览器预览：音量/平衡仅在桌面版生效');
+    } finally {
+      setReady(true);
     }
   };
 
@@ -102,7 +108,7 @@ export default function EndpointPanel({ capture, title }: EndpointPanelProps) {
   };
 
   return (
-    <section className="panel">
+    <section className="panel" data-booting={settled ? undefined : ''}>
       <div className="panel__head">
         <h2 className="panel__title">{title}</h2>
         <span className="pill" style={{ marginLeft: 'auto' }}>

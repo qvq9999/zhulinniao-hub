@@ -18,6 +18,7 @@ import Segmented from '../components/Segmented';
 import FitScale from '../components/FitScale';
 import { useDevice } from '../device/DeviceContext';
 import { useSetting } from '../state/settings';
+import { useSettle } from '../state/useSettle';
 import { THEME_FALLBACK, THEME_KEY, type ThemeVal } from '../state/theme';
 import {
   errText,
@@ -65,6 +66,9 @@ export default function Device() {
   const [autostartNote, setAutostartNote] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [closeAction, setCloseAction] = useSetting<CloseAction>('closeAction', 'ask');
+  const [ready, setReady] = useState(false);
+  /** 首帧静止守卫：开机自启默认为关，被真机值覆盖时不播开关过渡 */
+  const settled = useSettle(ready);
 
   // ---- 软件更新 ----
   type UpdatePhase = 'idle' | 'checking' | 'latest' | 'available' | 'downloading' | 'installing' | 'error';
@@ -157,6 +161,8 @@ export default function Device() {
         if (!cancelled) setAutorun(v);
       } catch {
         if (!cancelled) setAutostartNote('仅桌面版可用（当前为浏览器预览）');
+      } finally {
+        if (!cancelled) setReady(true);
       }
     })();
     return () => {
@@ -200,7 +206,7 @@ export default function Device() {
   };
 
   return (
-    <div className="app">
+    <div className="app" data-booting={settled ? undefined : ''}>
       <Sidebar />
       <div className="main">
         <Topbar crumbs="设置 · 装置设置及信息" />

@@ -18,6 +18,7 @@ import MicMeter from '../components/MicMeter';
 import FitScale from '../components/FitScale';
 import { errText } from '../device/tauriBridge';
 import { useDevice } from '../device/DeviceContext';
+import { useSettle } from '../state/useSettle';
 
 // 仅保留原版对 ZG3 实际开放的两类：音效 / 麦克风（空间音频与 LED 已整页下架）
 const HOTSPOTS = [
@@ -39,6 +40,9 @@ export default function Overview() {
     device: '',
   });
   const [micNote, setMicNote] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  /** 首帧静止守卫：麦克风音量/静音默认为 80%·关，被真机值覆盖时不播过渡 */
+  const settled = useSettle(ready);
   /** 用户最近一次操作时间戳：操作中不让轮询覆盖（避免拖拽打架） */
   const interacting = useRef(0);
 
@@ -55,6 +59,8 @@ export default function Overview() {
         setMic({ volume: m.volume, muted: m.muted, device: m.device_name });
       } catch {
         if (!cancelled) setMicNote('浏览器预览：麦克风控制仅在桌面版生效');
+      } finally {
+        if (!cancelled) setReady(true);
       }
     })();
     return () => {
@@ -96,6 +102,14 @@ export default function Overview() {
 
   const onMicVolumeChange = (v: number) => void pushMic({ volume: v / 100 });
   const onMicMuteChange = (v: boolean) => void pushMic({ muted: v });
+
+  /** 成功类反馈 4s 自动消失；错误类保留 */
+  useEffect(() => {
+    if (!micNote) return;
+    if (micNote.includes('失败')) return;
+    const t = window.setTimeout(() => setMicNote(null), 4000);
+    return () => window.clearTimeout(t);
+  }, [micNote]);
 
   // SVG 引线：测量热区与卡片位置绘制贝塞尔曲线，resize 时 rAF 重绘
   useEffect(() => {
@@ -170,7 +184,7 @@ export default function Overview() {
   });
 
   return (
-    <div className="app">
+    <div className="app" data-booting={settled ? undefined : ''}>
       <Sidebar />
       <div className="main">
         <Topbar crumbs="概览 · 设备总览" />
@@ -286,17 +300,23 @@ export default function Overview() {
                   </div>
                   <MicMeter />
                 </div>
-                {micNote && (
-                  <div style={{ marginTop: 'var(--space-3)' }}>
-                    <span className={`pill${micNote.includes('失败') ? ' pill--warn' : ' pill--ok'}`}>{micNote}</span>
-                  </div>
-                )}
               </section>
             </div>
           </section>
           </FitScale>
         </main>
       </div>
+      {/* 操作反馈浮层：fixed 定位不占布局。
+          原先提示条塞在这张卡里，拖麦克风音量时卡片会忽高忽低 → 整页跟着缩一下。 */}
+      {micNote && (
+        <div
+          className={`toast is-visible${micNote.includes('失败') ? ' toast--warn' : ''}`}
+          role="status"
+          aria-live="polite"
+        >
+          {micNote}
+        </div>
+      )}
     </div>
   );
 }

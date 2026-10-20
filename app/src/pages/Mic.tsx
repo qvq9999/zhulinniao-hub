@@ -8,6 +8,7 @@ import SliderRow from '../components/SliderRow';
 import Segmented from '../components/Segmented';
 import FitScale from '../components/FitScale';
 import { errText, isAvail, tauriFieldWrite, tauriFieldsRead } from '../device/tauriBridge';
+import { useSettle } from '../state/useSettle';
 
 /**
  * 麦克风页 — **严格对齐原版对 ZG3 提供的 2 项麦克风效果**：魔幻音效 / 麦克风降噪。
@@ -39,6 +40,8 @@ export default function Mic() {
   const [active, setActive] = useState<MicFxKey>('magicvoice');
   const [fields, setFields] = useState<Record<string, number>>({});
   const [ready, setReady] = useState(false);
+  /** 首帧静止守卫：真机回读落定前禁用过渡，避免开关从「关」滑到「开」（用户反馈的闪动） */
+  const settled = useSettle(ready);
   const [note, setNote] = useState<string | null>(null);
 
   /**
@@ -64,6 +67,14 @@ export default function Mic() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  /** 成功类反馈 4s 自动消失；错误类（含「失败 / 未就绪」）保留 */
+  useEffect(() => {
+    if (!note) return;
+    if (note.includes('失败') || note.includes('未就绪')) return;
+    const t = window.setTimeout(() => setNote(null), 4000);
+    return () => window.clearTimeout(t);
+  }, [note]);
 
   const writeField = async (field: string, value: number, label: string) => {
     try {
@@ -120,7 +131,7 @@ export default function Mic() {
   };
 
   return (
-    <div className="app">
+    <div className="app" data-booting={settled ? undefined : ''}>
       <Sidebar />
       <div className="main">
         <Topbar crumbs="麦克风 · 魔幻音效与麦克风降噪" />
@@ -184,13 +195,6 @@ export default function Mic() {
                 <p className="field__hint">
                   仅 2 项：原版对 ZG3 未开放麦克风均衡器 / 回音 / 录音特效 / AI 降噪，故此处不展示。
                 </p>
-                {note && (
-                  <div style={{ marginTop: 'var(--space-3)' }}>
-                    <span className={`pill${note.includes('失败') || note.includes('未就绪') ? ' pill--warn' : ' pill--ok'}`}>
-                      {note}
-                    </span>
-                  </div>
-                )}
               </div>
             </section>
 
@@ -236,6 +240,16 @@ export default function Mic() {
           </FitScale>
         </main>
       </div>
+      {/* 操作反馈浮层：fixed 定位，不占卡内空间（与音效页同一口径，避免卡片长高触发整页缩放） */}
+      {note && (
+        <div
+          className={`toast is-visible${note.includes('失败') || note.includes('未就绪') ? ' toast--warn' : ''}`}
+          role="status"
+          aria-live="polite"
+        >
+          {note}
+        </div>
+      )}
     </div>
   );
 }

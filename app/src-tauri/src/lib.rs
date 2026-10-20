@@ -28,6 +28,29 @@ pub fn run() {
         .setup(|app| {
             // 清理上次更新留下的安装包残留（2 小时前的）
             update::cleanup_stale();
+
+            /*
+             * 关闭 WebView2 的浏览器原生右键菜单（刷新 / 返回 / 另存为 / 检查…）。
+             * 否则窗口一右键就露出浏览器痕迹，不像桌面软件。
+             * 前端另有 contextmenu 兜底（main.tsx），两端都做是要保证 DOM 层与原生层都不弹。
+             * 输入框内仍可用 Ctrl+V 粘贴（禁的只是菜单，不影响快捷键）。
+             */
+            #[cfg(target_os = "windows")]
+            {
+                use tauri::Manager;
+                if let Some(win) = app.get_webview_window("main") {
+                    let _ = win.with_webview(|webview| {
+                        unsafe {
+                            if let Ok(core) = webview.controller().CoreWebView2() {
+                                if let Ok(settings) = core.Settings() {
+                                    let _ = settings.SetAreDefaultContextMenusEnabled(false);
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
             // Rust 侧看门狗：每 3s 主动执行页面探针并写盘（Rust 侧状态 + JS 侧 DOM 双通道）。
             // 页面 JS 定时器一旦不执行（线程卡死/渲染器异常），JS 通道缺失即可定位。
             let handle = app.handle().clone();

@@ -1,6 +1,6 @@
 [package]
 name = "zhulinniao-hub"
-version = "1.2.1"
+version = "1.2.2"
 description = "竹林鸟朱雀耳机 Hub（CM002X1）— 原版驱动 UI 重置版"
 edition = "2021"
 default-run = "zhulinniao-hub"
@@ -20,6 +20,8 @@ hidapi = "2"
 winreg = "0.52"
 
 [target.'cfg(windows)'.dependencies]
+# 用于关闭 WebView2 的浏览器原生右键菜单（刷新/检查/另存为…），让窗口表现得像原生软件
+webview2-com = "0.39"
 windows = { version = "0.58", features = [
     "Win32_Foundation",
     "Win32_System_Com",

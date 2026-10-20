@@ -6,6 +6,9 @@ import { DeviceProvider } from './device/DeviceContext';
 import { SettingsProvider } from './state/settings';
 import './styles/design-tokens.css';
 import './styles/app.css';
+// 质感层（方向 A · Light Precision）：只覆盖视觉，不改布局与交互。
+// 需整层回退时删除下面一行即可。
+import './styles/polish.css';
 
 /** 渲染期错误边界：组件异常可视化 + 磁盘上报，避免只看到空白窗口 */
 class ErrorBoundary extends React.Component<
@@ -60,6 +63,16 @@ ReactDOM.createRoot(rootEl!).render(
     </ErrorBoundary>
   </React.StrictMode>,
 );
+
+// 桌面软件观感：屏蔽浏览器右键菜单。
+// Rust 侧已关闭 WebView2 原生菜单（lib.rs），这里兜住 DOM 层的默认行为，
+// 顺带让浏览器预览调试时也不弹菜单。输入框放行，保留原生粘贴/复制。
+window.addEventListener('contextmenu', (e) => {
+  const el = e.target as HTMLElement | null;
+  const tag = el?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  e.preventDefault();
+});
 
 // 挂载心跳上报：能收到这条说明 React 渲染链路正常
 try {

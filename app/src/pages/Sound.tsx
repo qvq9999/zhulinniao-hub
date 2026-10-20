@@ -25,6 +25,7 @@ import {
   matchPresetName,
 } from '../data/eqPresets';
 import { useSettingPatch } from '../state/settings';
+import { useSettle } from '../state/useSettle';
 import { errText, isAvail, tauriEqRead, tauriEqWrite, tauriFieldWrite, tauriFieldsRead } from '../device/tauriBridge';
 
 /**
@@ -91,6 +92,19 @@ export default function Sound() {
   const [fields, setFields] = useState<Record<string, number>>({});
   const [ready, setReady] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  /**
+   * 操作反馈走浮层（fixed），**不再塞进卡片内**。
+   * 原先提示条渲染在「效果列表」卡片底部，出现时卡片长高约 38px，
+   * FitScale 检测到整页超高就缩一档，而且只缩不放 —— 表现就是
+   * 「开一下 7.1 环绕，整个效果列表突然变小一下」（用户反馈）。
+   * 浮层不参与布局，彻底消除这个跳动。
+   */
+  const noteIsError = !!note && (note.includes('失败') || note.includes('未就绪'));
+  /**
+   * 首帧静止守卫：真机回读落定前禁用过渡。
+   * 否则「默认全关」被回读覆盖成真值的那一刻，开着的开关会滑一下（用户反馈的闪动）。
+   */
+  const settled = useSettle(ready);
 
   // EQ 状态（真机回读为准）—— 原版旧视图只有 10 段增益，频率/Q/滤波不在此面板
   const [eqEnabled, setEqEnabled] = useState(true);
@@ -147,6 +161,14 @@ export default function Sound() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  /** 成功类反馈 4s 自动消失；错误类（含「失败 / 未就绪」）保留，避免通道故障被忽略 */
+  useEffect(() => {
+    if (!note) return;
+    if (note.includes('失败') || note.includes('未就绪')) return;
+    const t = window.setTimeout(() => setNote(null), 4000);
+    return () => window.clearTimeout(t);
+  }, [note]);
 
   /** 每次进入「均衡器」页签复测面板高度（见上：只增不减，避免锁成偏小值）。
       依赖只取 active/ready：ready 与「未启用提示条」在同一次渲染中落定，够用。 */
@@ -248,7 +270,7 @@ export default function Sound() {
   const missing = (f: string) => !isAvail(fields[f]);
 
   return (
-    <div className="app">
+    <div className="app" data-booting={settled ? undefined : ''}>
       <Sidebar />
       <div className="main">
         <Topbar crumbs="音效控制 · 耳机效果" />
@@ -317,13 +339,6 @@ export default function Sound() {
                 <p className="field__hint">
                   共 7 项，与原版 ZG3 实际提供的一致（名称取自 zh-CN\SoundEffect\SoundEffectSwitch.xaml）。
                 </p>
-                {note && (
-                  <div style={{ marginTop: 'var(--space-3)' }}>
-                    <span className={`pill${note.includes('失败') || note.includes('未就绪') ? ' pill--warn' : ' pill--ok'}`}>
-                      {note}
-                    </span>
-                  </div>
-                )}
               </div>
             </section>
 
@@ -346,6 +361,9 @@ export default function Sound() {
                 当前未启用：参数可调，开启后生效（与原版一致）。
               </div>
 
+              {/* 参数区：key={active} 让切页签时整块重新挂载，从而播放淡入过渡（纯 CSS，无 JS 编排）。
+                  包一层 div 对布局无影响：高度仍由下方 section 的 minHeight 锁定。 */}
+              <div className="fx-body" key={active}>
               {/* ---------- 均衡器 ---------- */}
               {active === 'eq' && (
                 <div>
@@ -599,11 +617,22 @@ export default function Sound() {
                   环绕扩增无额外参数：仅一个启用开关（Enable_Channel_COPY_LFX）。开启后把立体声扩展到环绕声道。
                 </p>
               )}
+              </div>
             </section>
           </div>
           </FitScale>
         </main>
       </div>
+      {/* 操作反馈浮层：fixed 定位，不参与布局（见 noteIsError 处的说明） */}
+      {note && (
+        <div
+          className={`toast is-visible${noteIsError ? ' toast--warn' : ''}`}
+          role="status"
+          aria-live="polite"
+        >
+          {note}
+        </div>
+      )}
     </div>
   );
 }

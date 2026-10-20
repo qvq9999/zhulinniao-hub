@@ -270,6 +270,17 @@ export async function onUpdateProgress(cb: (p: UpdateProgress) => void): Promise
 }
 
 /**
+ * 下载源切换事件：直连 GitHub 失败、改用镜像时后端发一次，payload 是源名称。
+ * 仅用于给用户一个解释（网络慢/连不上时不是卡住，而是在换源）。
+ */
+export async function onUpdateSource(cb: (source: string) => void): Promise<() => void> {
+  const un = await listen<string>('hub://update/source', (e) => cb(e.payload));
+  return () => {
+    void un();
+  };
+}
+
+/**
  * 统一错误文案：Tauri 的 Err(String) 以字符串形式 reject，
  * 直接读 .message 会得到 undefined（曾导致界面显示“写入失败：undefined”）。
  */

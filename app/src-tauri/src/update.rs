@@ -15,6 +15,11 @@ use serde::{Deserialize, Serialize};
 
 /// 最新 Release 的 API（换仓库时只需改这里）
 const API_LATEST: &str = "https://api.github.com/repos/qvq9999/zhulinniao-hub/releases/latest";
+/// 网页端 latest（302 跳转到 /releases/tag/vX.Y.Z），**不消耗 API 配额**
+const WEB_LATEST: &str = "https://github.com/qvq9999/zhulinniao-hub/releases/latest";
+/// 资产命名规则：与发版脚本保持一致，备用通道靠它推导下载地址
+const ASSET_PREFIX: &str = "ZhulinniaoHub";
+const DOWNLOAD_BASE: &str = "https://github.com/qvq9999/zhulinniao-hub/releases/download";
 
 #[derive(Debug, Deserialize)]
 struct GhAsset {
@@ -34,6 +39,30 @@ struct GhRelease {
     body: Option<String>,
     #[serde(default)]
     assets: Vec<GhAsset>,
+}
+
+/// GitHub 出错时的响应体：`{"message":"API rate limit exceeded ..."}`
+///
+/// 为什么需要它：curl 对 **HTTP 4xx/5xx 仍算成功退出**（退出码 0），
+/// 于是限流 JSON 会被当成 Release 结构去解析 → 报出「解析 Release 失败」这种误导文案。
+/// 用户 2026-10-20 反馈的正是这一条：本机出口 IP 的匿名配额（60 次/小时）被耗尽。
+#[derive(Debug, Deserialize)]
+struct GhApiError {
+    message: String,
+}
+
+/// 把 GitHub 的错误响应翻译成可读原因；不是错误响应则返回 None
+fn describe_api_error(text: &str) -> Option<String> {
+    let e: GhApiError = serde_json::from_str(text).ok()?;
+    let m = e.message;
+    let low = m.to_ascii_lowercase();
+    Some(if low.contains("rate limit") {
+        "GitHub 接口访问次数已超限（未登录 60 次/小时，按出口 IP 计）".to_string()
+    } else if low.contains("not found") {
+        format!("仓库或 Release 不存在（{m}）")
+    } else {
+        format!("GitHub 返回错误：{m}")
+    })
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -136,33 +165,136 @@ fn fetch_latest() -> Result<GhRelease, String> {
     if text.trim().is_empty() {
         return Err("查询更新失败：GitHub 返回空内容（可能是网络受限）".into());
     }
+    // 先判是不是 GitHub 的错误响应（限流 / 404），否则会被误报成「解析 Release 失败」
+    if let Some(desc) = describe_api_error(&text) {
+        return Err(desc);
+    }
     serde_json::from_str::<GhRelease>(&text).map_err(|e| {
         let head: String = text.chars().take(120).collect();
         format!("解析 Release 失败：{e}；返回内容开头：{head}")
     })
 }
 
-#[tauri::command]
-pub fn update_check() -> Result<UpdateInfo, String> {
-    let rel = fetch_latest()?;
-    let latest = rel.tag_name.trim_start_matches(['v', 'V']).to_string();
-    let current = current_version();
-    let asset = rel
-        .assets
-        .iter()
-        .find(|a| a.name.to_ascii_lowercase().ends_with("setup.exe"))
-        .ok_or_else(|| format!("最新版本 {latest} 里没有 setup.exe 资产"))?;
+/// 备用通道：读 `/releases/latest` 的 302 Location 取 tag。
+///
+/// 这条走 github.com 网页端点，**不消耗 API 配额**（匿名 API 只有 60 次/小时/IP），
+/// 因此 API 被限流时仍能判断「有没有新版本」。
+fn fetch_tag_via_redirect() -> Option<String> {
+    let out = curl_cmd()
+        // 注意：**不加 -L**，要的就是 302 本身
+        .args(["-sS", "-I", "--ssl-no-revoke", "--max-time", "15", WEB_LATEST])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let text = String::from_utf8_lossy(&out.stdout);
+    text.lines()
+        .filter(|l| l.to_ascii_lowercase().starts_with("location:"))
+        .filter_map(|l| l.split_once(':').map(|(_, v)| v.trim().to_string()))
+        .find_map(|u| {
+            let idx = u.find("/releases/tag/")?;
+            let tail = &u[idx + "/releases/tag/".len()..];
+            let tag = tail.split(['?', '#', '/']).next()?.trim();
+            (!tag.is_empty()).then(|| tag.to_string())
+        })
+}
 
-    Ok(UpdateInfo {
+/// HEAD 取远端字节数（拿不到返回 0）。备用通道没有 assets 元数据，靠它让进度条可用。
+fn head_size(url: &str) -> u64 {
+    let out = curl_cmd()
+        .args(["-sS", "-I", "-L", "--ssl-no-revoke", "--max-time", "15", url])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output();
+    let text = match out {
+        Ok(o) if o.status.success() => String::from_utf8_lossy(&o.stdout).to_string(),
+        _ => return 0,
+    };
+    // 多次跳转会有多个 Content-Length，取最后一个（最终资源）
+    text.lines()
+        .filter(|l| l.to_ascii_lowercase().starts_with("content-length:"))
+        .filter_map(|l| l.split_once(':').and_then(|(_, v)| v.trim().parse::<u64>().ok()))
+        .last()
+        .unwrap_or(0)
+}
+
+/// 资产命名规则（与发版脚本一致），备用通道据此推导下载地址
+fn asset_name_for(ver: &str) -> String {
+    format!("{ASSET_PREFIX}_{ver}_x64-setup.exe")
+}
+
+fn asset_url_for(tag: &str, name: &str) -> String {
+    format!("{DOWNLOAD_BASE}/{tag}/{name}")
+}
+
+fn build_info(
+    latest: String,
+    current: String,
+    notes: String,
+    asset_name: String,
+    asset_url: String,
+    asset_size: u64,
+    digest: String,
+) -> UpdateInfo {
+    UpdateInfo {
         newer: is_newer(&latest, &current),
         current,
         latest,
-        notes: rel.body.unwrap_or_else(|| rel.name.unwrap_or_default()),
-        asset_name: asset.name.clone(),
-        asset_url: asset.browser_download_url.clone(),
-        asset_size: asset.size,
-        digest: asset.digest.clone().unwrap_or_default(),
-    })
+        notes,
+        asset_name,
+        asset_url,
+        asset_size,
+        digest,
+    }
+}
+
+#[tauri::command]
+pub fn update_check() -> Result<UpdateInfo, String> {
+    let current = current_version();
+
+    match fetch_latest() {
+        Ok(rel) => {
+            let latest = rel.tag_name.trim_start_matches(['v', 'V']).to_string();
+            let asset = rel
+                .assets
+                .iter()
+                .find(|a| a.name.to_ascii_lowercase().ends_with("setup.exe"))
+                .ok_or_else(|| format!("最新版本 {latest} 里没有 setup.exe 资产"))?;
+            Ok(build_info(
+                latest,
+                current,
+                rel.body.unwrap_or_else(|| rel.name.unwrap_or_default()),
+                asset.name.clone(),
+                asset.browser_download_url.clone(),
+                asset.size,
+                asset.digest.clone().unwrap_or_default(),
+            ))
+        }
+        Err(api_err) => {
+            // API 不可用（限流 / 网络抖动）→ 走网页 302 备用通道，保证仍能提示有新版本
+            let tag = fetch_tag_via_redirect().ok_or_else(|| {
+                format!("{api_err}；备用通道也未能取到版本号，请检查网络后重试")
+            })?;
+            let latest = tag.trim_start_matches(['v', 'V']).to_string();
+            let name = asset_name_for(&latest);
+            let url = asset_url_for(&tag, &name);
+            let size = head_size(&url);
+            Ok(build_info(
+                latest,
+                current,
+                format!(
+                    "（本次经备用通道查询：{api_err}）\n更新说明请到 Release 页面查看。"
+                ),
+                name,
+                url,
+                size,
+                String::new(),
+            ))
+        }
+    }
 }
 
 /// 更新包落到 %TEMP%\zhulinniao-hub-update\
@@ -191,6 +323,10 @@ fn download_to(
 
     let started = Instant::now();
     let mut last = Instant::now() - Duration::from_secs(1);
+    // 「停滞」判定：连接挂起时 curl 不会自己报错，会一直吊到 30 分钟总超时。
+    // 15 秒收不到任何新字节就直接放弃，交给上层换下一个源（直连 → 镜像）。
+    let mut last_got = 0u64;
+    let mut last_growth = Instant::now();
     loop {
         match child.try_wait() {
             Ok(Some(_)) => break,
@@ -204,6 +340,13 @@ fn download_to(
                         -1.0
                     };
                     on_progress(got, percent);
+                    if got != last_got {
+                        last_got = got;
+                        last_growth = Instant::now();
+                    } else if last_growth.elapsed() > Duration::from_secs(15) {
+                        let _ = child.kill();
+                        return Err("下载停滞超过 15 秒（收不到新数据），已中止".into());
+                    }
                 }
                 if started.elapsed() > deadline {
                     let _ = child.kill();
@@ -231,7 +374,26 @@ fn download_to(
     Ok(size)
 }
 
+/// 下载源候选：**直连优先，失败再换公益镜像**。
+///
+/// 依据 2026-10-20 实测（对 v1.2.2 资产做 HEAD）：
+///   直连 2.4s / ghproxy.net 1.2s / gh-proxy.com 1.5s，三者 Content-Length 完全一致（2944103）；
+///   ghfast.top 超时不可用，jsDelivr 不支持 release 资产，故不列入。
+/// 镜像只是把同一份字节转发一次，因此**下载完成必须校验字节数**，不符就换下一个源。
+fn download_candidates(url: &str) -> Vec<(&'static str, String)> {
+    let mut list = vec![("直连 GitHub", url.to_string())];
+    // 只对原始 github.com 地址拼镜像前缀，避免把已经是镜像的地址二次包装
+    if url.starts_with("https://github.com/") {
+        list.push(("镜像 ghproxy.net", format!("https://ghproxy.net/{url}")));
+        list.push(("镜像 gh-proxy.com", format!("https://gh-proxy.com/{url}")));
+    }
+    list
+}
+
 /// 下载安装包，边下边发进度事件；返回本地路径
+///
+/// 多源策略：任一源失败（网络错误 / 字节数不符）自动换下一个，全部失败才报错，
+/// 换源时通过 `hub://update/source` 事件告知前端当前用的是哪个源。
 #[tauri::command]
 pub fn update_download(
     app: tauri::AppHandle,
@@ -250,14 +412,34 @@ pub fn update_download(
         .collect();
     let dest = dir.join(if safe.is_empty() { "update-setup.exe".to_string() } else { safe });
 
-    let size = download_to(&url, &dest, total, Duration::from_secs(1800), |got, percent| {
-        let _ = app.emit("hub://update/progress", Progress { downloaded: got, total, percent });
-    })?;
-    let _ = app.emit(
-        "hub://update/progress",
-        Progress { downloaded: size, total: size.max(total), percent: 100.0 },
-    );
-    Ok(dest.to_string_lossy().to_string())
+    let candidates = download_candidates(&url);
+    let total_sources = candidates.len();
+    let mut errors: Vec<String> = Vec::new();
+
+    for (label, cand) in candidates {
+        if label != "直连 GitHub" {
+            let _ = app.emit("hub://update/source", label.to_string());
+        }
+        let attempt = download_to(&cand, &dest, total, Duration::from_secs(1800), |got, percent| {
+            let _ = app.emit("hub://update/progress", Progress { downloaded: got, total, percent });
+        });
+        match attempt {
+            Ok(n) if total == 0 || n == total => {
+                let _ = app.emit(
+                    "hub://update/progress",
+                    Progress { downloaded: n, total: n.max(total), percent: 100.0 },
+                );
+                return Ok(dest.to_string_lossy().to_string());
+            }
+            Ok(n) => errors.push(format!("{label}：字节数不符（收到 {n}，应为 {total}）")),
+            Err(e) => errors.push(format!("{label}：{e}")),
+        }
+    }
+
+    Err(format!(
+        "下载失败，已尝试 {total_sources} 个源 —— {}",
+        errors.join("；")
+    ))
 }
 
 /// 安装完成标记：提权链在装完后创建它，非提权守望者见到它就重新拉起应用。
@@ -447,6 +629,53 @@ mod tests {
     #[test]
     fn ps_literal_escapes_quotes() {
         assert_eq!(ps_lit("C:\\a b\\x'"), "'C:\\a b\\x'''"); // 单引号翻倍
+    }
+
+    /// 下载源候选：直连在前，镜像只对原始 github.com 地址追加，且不重复包装
+    #[test]
+    fn download_candidates_order() {
+        let url = "https://github.com/qvq9999/zhulinniao-hub/releases/download/v1.2.2/a.exe";
+        let c = download_candidates(url);
+        assert_eq!(c.len(), 3);
+        assert_eq!(c[0].1, url, "第一个必须是直连");
+        assert!(c[1].1.starts_with("https://ghproxy.net/https://github.com/"), "镜像 1 拼接错误：{}", c[1].1);
+        assert!(c[2].1.starts_with("https://gh-proxy.com/https://github.com/"), "镜像 2 拼接错误：{}", c[2].1);
+
+        // 已经是镜像地址时不再二次包装（避免 ghproxy.net/https://ghproxy.net/...）
+        let mirrored = "https://ghproxy.net/https://github.com/x/y/z.exe";
+        let c2 = download_candidates(mirrored);
+        assert_eq!(c2.len(), 1);
+    }
+
+    /// GitHub 错误响应必须被识别成「限流」，而不是「解析 Release 失败」
+    #[test]
+    fn api_error_is_described() {
+        let body = r#"{"message":"API rate limit exceeded for 1.2.3.4.","documentation_url":"https://docs.github.com"}"#;
+        let d = describe_api_error(body).expect("应识别为错误响应");
+        assert!(d.contains("超限"), "限流文案不符：{d}");
+        assert!(!d.contains("解析"), "不应出现「解析」字样");
+
+        let nf = r#"{"message":"Not Found"}"#;
+        assert!(describe_api_error(nf).unwrap().contains("不存在"));
+
+        // 正常 Release 体不应被误判
+        assert!(describe_api_error(r#"{"tag_name":"v1.2.2","assets":[]}"#).is_none());
+    }
+
+    /// 从 302 响应头里抠 tag（真实返回形如 Location: https://github.com/o/r/releases/tag/v1.2.2）
+    #[test]
+    fn parse_tag_from_redirect_headers() {
+        let hdr = "HTTP/1.1 302 Found\r\nLocation: https://github.com/qvq9999/zhulinniao-hub/releases/tag/v1.2.2\r\n\r\n";
+        let tag = hdr
+            .lines()
+            .filter(|l| l.to_ascii_lowercase().starts_with("location:"))
+            .filter_map(|l| l.split_once(':').map(|(_, v)| v.trim().to_string()))
+            .find_map(|u| {
+                let i = u.find("/releases/tag/")?;
+                let t = u[i + "/releases/tag/".len()..].split(['?', '#', '/']).next()?.trim();
+                (!t.is_empty()).then(|| t.to_string())
+            });
+        assert_eq!(tag.as_deref(), Some("v1.2.2"));
     }
 
     #[test]

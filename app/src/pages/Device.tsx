@@ -23,6 +23,7 @@ import { THEME_FALLBACK, THEME_KEY, type ThemeVal } from '../state/theme';
 import {
   errText,
   onUpdateProgress,
+  onUpdateSource,
   tauriAppVersion,
   tauriDeviceDetails,
   tauriGetAutostart,
@@ -85,14 +86,24 @@ export default function Device() {
   }, []);
 
   useEffect(() => {
-    let off: (() => void) | undefined;
+    let offProgress: (() => void) | undefined;
+    let offSource: (() => void) | undefined;
     void onUpdateProgress((p) => {
       setPercent(p.percent);
       if (p.percent >= 0) setUpdateMsg(`正在下载更新包… ${p.percent.toFixed(0)}%`);
     }).then((fn) => {
-      off = fn;
+      offProgress = fn;
     });
-    return () => off?.();
+    // 直连 GitHub 失败改走镜像时告知用户（不改变操作，只是让等待有解释）
+    void onUpdateSource((src) => {
+      setUpdateMsg(`直连 GitHub 失败，正在经${src}下载…`);
+    }).then((fn) => {
+      offSource = fn;
+    });
+    return () => {
+      offProgress?.();
+      offSource?.();
+    };
   }, []);
 
   const checkUpdate = async () => {
